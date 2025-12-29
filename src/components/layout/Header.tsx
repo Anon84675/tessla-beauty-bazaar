@@ -1,0 +1,225 @@
+import { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import { Menu, X, Search, ShoppingBag, Phone, Mail, ChevronDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useCart } from "@/contexts/CartContext";
+import { categories } from "@/data/products";
+
+const Header = () => {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const { openCart, totalItems } = useCart();
+  const location = useLocation();
+
+  const navLinks = [
+    { name: "Home", path: "/" },
+    { name: "Shop", path: "/shop", hasDropdown: true },
+    { name: "About Us", path: "/about" },
+    { name: "Contact", path: "/contact" },
+    { name: "FAQ", path: "/faq" },
+  ];
+
+  const isActive = (path: string) => location.pathname === path;
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      window.location.href = `/shop?search=${encodeURIComponent(searchQuery)}`;
+    }
+  };
+
+  return (
+    <header className="sticky top-0 z-50">
+      {/* Top Bar */}
+      <div className="bg-gradient-dark text-primary-foreground">
+        <div className="container flex items-center justify-between py-2 text-sm">
+          <div className="flex items-center gap-6">
+            <a href="mailto:sales@tesslaequipment.com" className="flex items-center gap-2 hover:text-accent transition-colors">
+              <Mail className="h-4 w-4" />
+              <span className="hidden sm:inline">sales@tesslaequipment.com</span>
+            </a>
+            <a href="tel:+254742324193" className="flex items-center gap-2 hover:text-accent transition-colors">
+              <Phone className="h-4 w-4" />
+              <span className="hidden sm:inline">+254 742 324 193</span>
+            </a>
+          </div>
+          <div className="flex items-center gap-4">
+            <span className="text-xs text-muted-foreground">Free Delivery on Orders Over KSh 50,000</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Header */}
+      <div className="bg-background/95 backdrop-blur-md border-b border-border shadow-soft">
+        <div className="container flex items-center justify-between py-4">
+          {/* Logo */}
+          <Link to="/" className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-full bg-gradient-primary flex items-center justify-center shadow-glow">
+              <span className="text-primary-foreground font-serif font-bold text-xl">T</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="font-serif font-bold text-xl tracking-tight text-foreground">Tessla</span>
+              <span className="text-xs text-muted-foreground -mt-1">Equipment Stores</span>
+            </div>
+          </Link>
+
+          {/* Desktop Navigation */}
+          <nav className="hidden lg:flex items-center gap-8">
+            {navLinks.map((link) => (
+              <div key={link.name} className="relative group">
+                <Link
+                  to={link.path}
+                  className={`flex items-center gap-1 font-medium text-sm transition-colors hover:text-primary ${
+                    isActive(link.path) ? "text-primary" : "text-foreground"
+                  }`}
+                >
+                  {link.name}
+                  {link.hasDropdown && <ChevronDown className="h-4 w-4" />}
+                </Link>
+                
+                {/* Dropdown for Shop */}
+                {link.hasDropdown && (
+                  <div className="absolute top-full left-0 pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                    <div className="bg-card rounded-xl shadow-elegant border border-border p-4 min-w-[240px]">
+                      <p className="text-xs font-medium text-muted-foreground mb-3 uppercase tracking-wider">Categories</p>
+                      <div className="space-y-1">
+                        {categories.map((cat) => (
+                          <Link
+                            key={cat.id}
+                            to={`/shop?category=${cat.id}`}
+                            className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-secondary transition-colors"
+                          >
+                            <span>{cat.icon}</span>
+                            <span className="text-sm">{cat.name}</span>
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </nav>
+
+          {/* Right Actions */}
+          <div className="flex items-center gap-3">
+            {/* Search */}
+            <AnimatePresence>
+              {isSearchOpen ? (
+                <motion.form
+                  initial={{ width: 0, opacity: 0 }}
+                  animate={{ width: 200, opacity: 1 }}
+                  exit={{ width: 0, opacity: 0 }}
+                  onSubmit={handleSearch}
+                  className="relative overflow-hidden"
+                >
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search products..."
+                    className="w-full h-10 pl-4 pr-10 rounded-full border border-border bg-secondary/50 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    autoFocus
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    className="absolute right-1 top-1"
+                    onClick={() => setIsSearchOpen(false)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </motion.form>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsSearchOpen(true)}
+                >
+                  <Search className="h-5 w-5" />
+                </Button>
+              )}
+            </AnimatePresence>
+
+            {/* Cart Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative"
+              onClick={openCart}
+            >
+              <ShoppingBag className="h-5 w-5" />
+              {totalItems > 0 && (
+                <motion.span
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-accent text-accent-foreground text-xs font-bold flex items-center justify-center shadow-gold"
+                >
+                  {totalItems}
+                </motion.span>
+              )}
+            </Button>
+
+            {/* Mobile Menu Toggle */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="lg:hidden"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            >
+              {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </Button>
+          </div>
+        </div>
+
+        {/* Mobile Menu */}
+        <AnimatePresence>
+          {isMobileMenuOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="lg:hidden border-t border-border overflow-hidden"
+            >
+              <nav className="container py-4 space-y-2">
+                {navLinks.map((link) => (
+                  <Link
+                    key={link.name}
+                    to={link.path}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`block px-4 py-3 rounded-lg font-medium transition-colors ${
+                      isActive(link.path)
+                        ? "bg-primary text-primary-foreground"
+                        : "hover:bg-secondary"
+                    }`}
+                  >
+                    {link.name}
+                  </Link>
+                ))}
+                <div className="pt-4 border-t border-border">
+                  <p className="px-4 text-xs font-medium text-muted-foreground mb-2 uppercase">Categories</p>
+                  {categories.map((cat) => (
+                    <Link
+                      key={cat.id}
+                      to={`/shop?category=${cat.id}`}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-2 hover:bg-secondary rounded-lg transition-colors"
+                    >
+                      <span>{cat.icon}</span>
+                      <span className="text-sm">{cat.name}</span>
+                    </Link>
+                  ))}
+                </div>
+              </nav>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </header>
+  );
+};
+
+export default Header;
