@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
-import { Mail, Phone, MapPin, Facebook, Instagram, Twitter } from "lucide-react";
+import { Mail, Phone, MapPin, Facebook, Instagram, Twitter, Heart } from "lucide-react";
 import { categories } from "@/data/products";
+import Logo from "@/components/brand/Logo";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -12,14 +13,8 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
           {/* Brand */}
           <div className="space-y-6">
-            <Link to="/" className="flex items-center gap-3">
-              <div className="h-12 w-12 rounded-full bg-gradient-primary flex items-center justify-center shadow-glow">
-                <span className="text-primary-foreground font-serif font-bold text-2xl">T</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="font-serif font-bold text-2xl">Tessla</span>
-                <span className="text-xs text-muted-foreground -mt-1">Equipment Stores</span>
-              </div>
+            <Link to="/">
+              <Logo size="lg" variant="light" showTagline={true} />
             </Link>
             <p className="text-sm text-muted-foreground leading-relaxed">
               Your trusted partner for premium barbershop, salon, and spa equipment. 
@@ -134,8 +129,10 @@ const Footer = () => {
       {/* Bottom Bar */}
       <div className="border-t border-foreground/10">
         <div className="container py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-muted-foreground">
-            © {currentYear} Tessla Equipment Stores. All rights reserved.
+          <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+            © {currentYear} Tessla Equipment Stores. Made with 
+            <Heart className="h-3.5 w-3.5 text-primary fill-primary" /> 
+            in Nairobi
           </p>
           <div className="flex gap-6">
             <Link to="/faq#privacy" className="text-xs text-muted-foreground hover:text-accent transition-colors">

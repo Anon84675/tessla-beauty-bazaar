@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Search, ShoppingBag, Phone, Mail, ChevronDown, User, LogOut, Settings } from "lucide-react";
+import { Menu, X, Search, ShoppingBag, Phone, Mail, ChevronDown, User, LogOut, Settings, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { categories } from "@/data/products";
+import Logo from "@/components/brand/Logo";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -49,19 +50,20 @@ const Header = () => {
     <header className="sticky top-0 z-50">
       {/* Top Bar */}
       <div className="bg-gradient-dark text-primary-foreground">
-        <div className="container flex items-center justify-between py-2 text-sm">
+        <div className="container flex items-center justify-between py-2.5 text-sm">
           <div className="flex items-center gap-6">
-            <a href="mailto:sales@tesslaequipment.com" className="flex items-center gap-2 hover:text-accent transition-colors">
-              <Mail className="h-4 w-4" />
+            <a href="mailto:sales@tesslaequipment.com" className="flex items-center gap-2 hover:text-accent transition-colors group">
+              <Mail className="h-4 w-4 group-hover:scale-110 transition-transform" />
               <span className="hidden sm:inline">sales@tesslaequipment.com</span>
             </a>
-            <a href="tel:+254742324193" className="flex items-center gap-2 hover:text-accent transition-colors">
-              <Phone className="h-4 w-4" />
+            <a href="tel:+254742324193" className="flex items-center gap-2 hover:text-accent transition-colors group">
+              <Phone className="h-4 w-4 group-hover:scale-110 transition-transform" />
               <span className="hidden sm:inline">+254 742 324 193</span>
             </a>
           </div>
-          <div className="flex items-center gap-4">
-            <span className="text-xs text-muted-foreground">Free Delivery on Orders Over KSh 50,000</span>
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-3.5 w-3.5 text-accent" />
+            <span className="text-xs font-medium">Free Delivery on Orders Over KSh 50,000</span>
           </div>
         </div>
       </div>
@@ -70,14 +72,8 @@ const Header = () => {
       <div className="bg-background/95 backdrop-blur-md border-b border-border shadow-soft">
         <div className="container flex items-center justify-between py-4">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-gradient-primary flex items-center justify-center shadow-glow">
-              <span className="text-primary-foreground font-serif font-bold text-xl">T</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="font-serif font-bold text-xl tracking-tight text-foreground">Tessla</span>
-              <span className="text-xs text-muted-foreground -mt-1">Equipment Stores</span>
-            </div>
+          <Link to="/">
+            <Logo size="md" variant="default" showTagline={true} />
           </Link>
 
           {/* Desktop Navigation */}
