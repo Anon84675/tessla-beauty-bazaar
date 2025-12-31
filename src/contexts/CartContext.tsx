@@ -104,7 +104,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
         const items = JSON.parse(savedCart);
         dispatch({ type: "LOAD_CART", items });
       } catch (e) {
-        console.error("Failed to load cart from localStorage");
+        if (import.meta.env.DEV) {
+          console.error("Failed to load cart from localStorage");
+        }
       }
     }
   }, []);
