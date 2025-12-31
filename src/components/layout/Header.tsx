@@ -48,32 +48,34 @@ const Header = () => {
 
   return (
     <header className="sticky top-0 z-50">
-      {/* Top Bar */}
-      <div className="bg-gradient-dark text-primary-foreground">
-        <div className="container flex items-center justify-between py-2.5 text-sm">
-          <div className="flex items-center gap-6">
+      {/* Top Bar - Hidden on mobile for cleaner look */}
+      <div className="bg-gradient-dark text-primary-foreground hidden sm:block">
+        <div className="container flex items-center justify-between py-2 text-sm">
+          <div className="flex items-center gap-4 md:gap-6">
             <a href="mailto:sales@tesslaequipment.com" className="flex items-center gap-2 hover:text-accent transition-colors group">
               <Mail className="h-4 w-4 group-hover:scale-110 transition-transform" />
-              <span className="hidden sm:inline">sales@tesslaequipment.com</span>
+              <span className="hidden md:inline">sales@tesslaequipment.com</span>
             </a>
             <a href="tel:+254742324193" className="flex items-center gap-2 hover:text-accent transition-colors group">
               <Phone className="h-4 w-4 group-hover:scale-110 transition-transform" />
-              <span className="hidden sm:inline">+254 742 324 193</span>
+              <span className="hidden md:inline">+254 742 324 193</span>
             </a>
           </div>
           <div className="flex items-center gap-2">
             <Sparkles className="h-3.5 w-3.5 text-accent" />
-            <span className="text-xs font-medium">Free Delivery on Orders Over KSh 50,000</span>
+            <span className="text-xs font-medium hidden lg:inline">Free Delivery on Orders Over KSh 50,000</span>
+            <span className="text-xs font-medium lg:hidden">Free Delivery 50K+</span>
           </div>
         </div>
       </div>
 
       {/* Main Header */}
       <div className="bg-background/95 backdrop-blur-md border-b border-border shadow-soft">
-        <div className="container flex items-center justify-between py-4">
-          {/* Logo */}
-          <Link to="/">
-            <Logo size="md" variant="default" showTagline={true} />
+        <div className="container flex items-center justify-between py-3 lg:py-4">
+          {/* Logo - Smaller on mobile */}
+          <Link to="/" className="flex-shrink-0">
+            <Logo size="sm" variant="default" showTagline={false} className="lg:hidden" />
+            <Logo size="md" variant="default" showTagline={true} className="hidden lg:flex" />
           </Link>
 
           {/* Desktop Navigation */}
@@ -115,8 +117,8 @@ const Header = () => {
           </nav>
 
           {/* Right Actions */}
-          <div className="flex items-center gap-3">
-            {/* Search */}
+          <div className="flex items-center gap-1 sm:gap-2 lg:gap-3">
+            {/* Search - Hidden on small mobile, icon only on larger screens */}
             <AnimatePresence>
               {isSearchOpen ? (
                 <motion.form
@@ -205,12 +207,15 @@ const Header = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Button variant="ghost" size="sm" asChild>
-                <Link to="/auth">Sign In</Link>
-              </Button>
+              <>
+                <Button variant="ghost" size="icon" className="sm:hidden" asChild>
+                  <Link to="/auth"><User className="h-5 w-5" /></Link>
+                </Button>
+                <Button variant="ghost" size="sm" className="hidden sm:inline-flex" asChild>
+                  <Link to="/auth">Sign In</Link>
+                </Button>
+              </>
             )}
-
-            {/* Mobile Menu Toggle */}
             <Button
               variant="ghost"
               size="icon"
