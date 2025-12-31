@@ -61,8 +61,9 @@
     --shadow-sm: 0 2px 8px -2px hsl(20 15% 15% / 0.08);
     --shadow-md: 0 8px 24px -8px hsl(20 15% 15% / 0.12);
     --shadow-lg: 0 16px 48px -12px hsl(20 15% 15% / 0.16);
-    --shadow-glow: 0 0 40px hsl(350 45% 45% / 0.2);
+    --shadow-glow: 0 0 30px hsl(350 45% 45% / 0.35), 0 0 60px hsl(350 45% 45% / 0.15);
     --shadow-gold: 0 4px 20px hsl(35 70% 50% / 0.25);
+    --shadow-soft: 0 4px 24px -4px hsl(20 15% 15% / 0.08);
 
     /* Typography */
     --font-serif: 'Playfair Display', Georgia, serif;
@@ -178,6 +179,10 @@
 
   .shadow-gold {
     box-shadow: var(--shadow-gold);
+  }
+
+  .shadow-soft {
+    box-shadow: var(--shadow-soft);
   }
 }
 
