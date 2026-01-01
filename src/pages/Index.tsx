@@ -6,12 +6,12 @@ import TrustBadges from "@/components/home/TrustBadges";
 import CategoryGrid from "@/components/home/CategoryGrid";
 import FeaturedProducts from "@/components/home/FeaturedProducts";
 import Newsletter from "@/components/home/Newsletter";
-import { getFeaturedProducts, getBestSellers, getNewArrivals } from "@/data/products";
+import { useFeaturedProducts, useBestSellers, useNewArrivals } from "@/hooks/useProducts";
 
 const Index = () => {
-  const featuredProducts = getFeaturedProducts();
-  const bestSellers = getBestSellers();
-  const newArrivals = getNewArrivals();
+  const { products: featuredProducts, isLoading: featuredLoading } = useFeaturedProducts();
+  const { products: bestSellers, isLoading: bestSellersLoading } = useBestSellers();
+  const { products: newArrivals, isLoading: newArrivalsLoading } = useNewArrivals();
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -29,23 +29,27 @@ const Index = () => {
         <CategoryGrid />
 
         {/* Featured Products */}
-        <FeaturedProducts
-          title="Featured Products"
-          subtitle="Editor's Choice"
-          products={featuredProducts.slice(0, 4)}
-          viewAllLink="/shop"
-        />
+        {!featuredLoading && featuredProducts.length > 0 && (
+          <FeaturedProducts
+            title="Featured Products"
+            subtitle="Editor's Choice"
+            products={featuredProducts.slice(0, 4)}
+            viewAllLink="/shop"
+          />
+        )}
 
         {/* Best Sellers */}
-        <FeaturedProducts
-          title="Best Sellers"
-          subtitle="Most Popular"
-          products={bestSellers.slice(0, 4)}
-          viewAllLink="/shop?filter=bestseller"
-        />
+        {!bestSellersLoading && bestSellers.length > 0 && (
+          <FeaturedProducts
+            title="Best Sellers"
+            subtitle="Most Popular"
+            products={bestSellers.slice(0, 4)}
+            viewAllLink="/shop?filter=bestseller"
+          />
+        )}
 
         {/* New Arrivals */}
-        {newArrivals.length > 0 && (
+        {!newArrivalsLoading && newArrivals.length > 0 && (
           <FeaturedProducts
             title="New Arrivals"
             subtitle="Just In"

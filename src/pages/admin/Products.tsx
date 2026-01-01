@@ -4,12 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2 } from "lucide-react";
+import ImageUpload from "@/components/admin/ImageUpload";
+import { categories } from "@/data/products";
 
 interface Product {
   id: string;
@@ -24,6 +27,7 @@ interface Product {
   is_featured: boolean;
   is_new: boolean;
   is_best_seller: boolean;
+  images: string[];
 }
 
 const Products = () => {
@@ -43,6 +47,7 @@ const Products = () => {
     is_featured: false,
     is_new: false,
     is_best_seller: false,
+    images: [] as string[],
   });
 
   useEffect(() => {
@@ -80,6 +85,7 @@ const Products = () => {
       is_featured: formData.is_featured,
       is_new: formData.is_new,
       is_best_seller: formData.is_best_seller,
+      images: formData.images,
     };
 
     try {
@@ -122,6 +128,7 @@ const Products = () => {
       is_featured: product.is_featured,
       is_new: product.is_new,
       is_best_seller: product.is_best_seller,
+      images: product.images || [],
     });
     setIsDialogOpen(true);
   };
@@ -157,6 +164,7 @@ const Products = () => {
       is_featured: false,
       is_new: false,
       is_best_seller: false,
+      images: [],
     });
   };
 
@@ -195,6 +203,16 @@ const Products = () => {
               <DialogTitle>{editingProduct ? "Edit Product" : "Add Product"}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Image Upload */}
+              <div className="space-y-2">
+                <Label>Product Images</Label>
+                <ImageUpload
+                  images={formData.images}
+                  onImagesChange={(images) => setFormData({ ...formData, images })}
+                  maxImages={5}
+                />
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Name *</Label>
@@ -207,12 +225,21 @@ const Products = () => {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="category">Category *</Label>
-                  <Input
-                    id="category"
+                  <Select
                     value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    required
-                  />
+                    onValueChange={(value) => setFormData({ ...formData, category: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a category" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background">
+                      {categories.map((cat) => (
+                        <SelectItem key={cat.id} value={cat.id}>
+                          {cat.icon} {cat.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
@@ -323,6 +350,7 @@ const Products = () => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Image</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead>Price</TableHead>
@@ -334,8 +362,23 @@ const Products = () => {
               <TableBody>
                 {products.map((product) => (
                   <TableRow key={product.id}>
+                    <TableCell>
+                      {product.images && product.images.length > 0 ? (
+                        <img
+                          src={product.images[0]}
+                          alt={product.name}
+                          className="w-12 h-12 object-cover rounded-lg"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 bg-secondary rounded-lg flex items-center justify-center text-muted-foreground text-xs">
+                          No img
+                        </div>
+                      )}
+                    </TableCell>
                     <TableCell className="font-medium">{product.name}</TableCell>
-                    <TableCell>{product.category}</TableCell>
+                    <TableCell>
+                      {categories.find((c) => c.id === product.category)?.name || product.category}
+                    </TableCell>
                     <TableCell>{formatPrice(product.price)}</TableCell>
                     <TableCell>{product.stock_quantity}</TableCell>
                     <TableCell>

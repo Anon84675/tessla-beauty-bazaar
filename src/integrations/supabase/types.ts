@@ -14,6 +14,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      delivery_assignments: {
+        Row: {
+          assigned_at: string
+          created_at: string
+          delivered_at: string | null
+          driver_id: string
+          id: string
+          notes: string | null
+          order_id: string
+          picked_up_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_at?: string
+          created_at?: string
+          delivered_at?: string | null
+          driver_id: string
+          id?: string
+          notes?: string | null
+          order_id: string
+          picked_up_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_at?: string
+          created_at?: string
+          delivered_at?: string | null
+          driver_id?: string
+          id?: string
+          notes?: string | null
+          order_id?: string
+          picked_up_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_assignments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           created_at: string
@@ -256,7 +303,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "user"
+      app_role: "admin" | "user" | "driver"
       order_status:
         | "pending"
         | "paid"
@@ -391,7 +438,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "user"],
+      app_role: ["admin", "user", "driver"],
       order_status: [
         "pending",
         "paid",

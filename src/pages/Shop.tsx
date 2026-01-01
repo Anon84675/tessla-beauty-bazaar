@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Filter, SlidersHorizontal, Grid, List, Search, X } from "lucide-react";
@@ -7,12 +7,14 @@ import Footer from "@/components/layout/Footer";
 import CartSidebar from "@/components/layout/CartSidebar";
 import ProductCard from "@/components/products/ProductCard";
 import { Button } from "@/components/ui/button";
-import { products, categories, brands, searchProducts } from "@/data/products";
+import { categories, brands } from "@/data/products";
+import { useProducts } from "@/hooks/useProducts";
 
 const Shop = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const { products, isLoading } = useProducts();
   
   const categoryFilter = searchParams.get("category") || "";
   const brandFilter = searchParams.get("brand") || "";
@@ -27,7 +29,13 @@ const Shop = () => {
 
     // Search filter
     if (searchQuery) {
-      result = searchProducts(searchQuery);
+      const lowerQuery = searchQuery.toLowerCase();
+      result = result.filter(p => 
+        p.name.toLowerCase().includes(lowerQuery) ||
+        p.description.toLowerCase().includes(lowerQuery) ||
+        p.brand.toLowerCase().includes(lowerQuery) ||
+        p.category.toLowerCase().includes(lowerQuery)
+      );
     }
 
     // Category filter
@@ -59,7 +67,7 @@ const Shop = () => {
     }
 
     return result;
-  }, [categoryFilter, brandFilter, searchQuery, priceSort, filterType]);
+  }, [products, categoryFilter, brandFilter, searchQuery, priceSort, filterType]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,6 +94,19 @@ const Shop = () => {
   };
 
   const activeFiltersCount = [categoryFilter, brandFilter, filterType, searchQuery].filter(Boolean).length;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <CartSidebar />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -268,7 +289,7 @@ const Shop = () => {
                         filterType === "bestseller" ? "bg-primary text-primary-foreground" : "hover:bg-secondary"
                       }`}
                     >
-                      🔥 Best Sellers
+                      Best Sellers
                     </button>
                     <button
                       onClick={() => updateFilter("filter", "new")}
@@ -276,7 +297,7 @@ const Shop = () => {
                         filterType === "new" ? "bg-primary text-primary-foreground" : "hover:bg-secondary"
                       }`}
                     >
-                      ✨ New Arrivals
+                      New Arrivals
                     </button>
                     <button
                       onClick={() => updateFilter("filter", "sale")}
@@ -284,7 +305,7 @@ const Shop = () => {
                         filterType === "sale" ? "bg-primary text-primary-foreground" : "hover:bg-secondary"
                       }`}
                     >
-                      🏷️ On Sale
+                      On Sale
                     </button>
                   </div>
                 </div>

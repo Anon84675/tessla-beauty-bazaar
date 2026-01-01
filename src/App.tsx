@@ -18,6 +18,11 @@ import Dashboard from "./pages/admin/Dashboard";
 import Products from "./pages/admin/Products";
 import Orders from "./pages/admin/Orders";
 import Users from "./pages/admin/Users";
+import DriverLayout from "./pages/driver/DriverLayout";
+import DriverAuth from "./pages/driver/DriverAuth";
+import AvailableJobs from "./pages/driver/AvailableJobs";
+import ActiveDeliveries from "./pages/driver/ActiveDeliveries";
+import CompletedDeliveries from "./pages/driver/CompletedDeliveries";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -44,6 +49,12 @@ const App = () => (
                 <Route path="products" element={<Products />} />
                 <Route path="orders" element={<Orders />} />
                 <Route path="users" element={<Users />} />
+              </Route>
+              <Route path="/driver/auth" element={<DriverAuth />} />
+              <Route path="/driver" element={<DriverLayout />}>
+                <Route index element={<AvailableJobs />} />
+                <Route path="active" element={<ActiveDeliveries />} />
+                <Route path="completed" element={<CompletedDeliveries />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
