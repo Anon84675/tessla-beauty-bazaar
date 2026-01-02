@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Search, ShoppingBag, Phone, Mail, ChevronDown, User, LogOut, Settings, Sparkles } from "lucide-react";
+import { Menu, X, Search, ShoppingBag, Phone, Mail, ChevronDown, User, LogOut, Settings, Sparkles, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -20,7 +20,7 @@ const Header = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const { openCart, totalItems } = useCart();
-  const { user, isAdmin, signOut } = useAuth();
+  const { user, isAdmin, isDriver, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -197,6 +197,14 @@ const Header = () => {
                       <Link to="/admin" className="flex items-center gap-2 cursor-pointer">
                         <Settings className="h-4 w-4" />
                         Admin Portal
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+                  {isDriver && (
+                    <DropdownMenuItem asChild>
+                      <Link to="/driver" className="flex items-center gap-2 cursor-pointer">
+                        <Truck className="h-4 w-4" />
+                        Driver Portal
                       </Link>
                     </DropdownMenuItem>
                   )}
