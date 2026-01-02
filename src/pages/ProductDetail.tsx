@@ -1,21 +1,39 @@
 import { useParams, Link } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Star, ShoppingBag, Minus, Plus, Check, Truck, Shield, RotateCcw, ChevronRight } from "lucide-react";
+import { Star, ShoppingBag, Minus, Plus, Check, Truck, Shield, RotateCcw, ChevronRight, Loader2 } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import CartSidebar from "@/components/layout/CartSidebar";
 import { Button } from "@/components/ui/button";
-import { getProductById, getProductsByCategory } from "@/data/products";
+import { useProductById, useProducts } from "@/hooks/useProducts";
 import { useCart } from "@/contexts/CartContext";
 import ProductCard from "@/components/products/ProductCard";
 
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const product = getProductById(id || "");
+  const { product, isLoading } = useProductById(id || "");
+  const { products: allProducts } = useProducts();
   const { addItem } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
+
+  // Reset selected image when product changes
+  useEffect(() => {
+    setSelectedImage(0);
+  }, [id]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 container py-20 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   if (!product) {
     return (
@@ -33,8 +51,8 @@ const ProductDetail = () => {
     );
   }
 
-  const relatedProducts = getProductsByCategory(product.category)
-    .filter(p => p.id !== product.id)
+  const relatedProducts = allProducts
+    .filter(p => p.category === product.category && p.id !== product.id)
     .slice(0, 4);
 
   const formatPrice = (price: number) => `KSh ${price.toLocaleString()}`;
