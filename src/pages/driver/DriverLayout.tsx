@@ -1,12 +1,12 @@
 import { useEffect } from "react";
 import { Outlet, Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { Truck, Package, LogOut, Home, CheckCircle, Clock } from "lucide-react";
+import { Truck, Package, LogOut, Home, CheckCircle, Clock, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Logo from "@/components/brand/Logo";
 
 const DriverLayout = () => {
-  const { user, isLoading, signOut } = useAuth();
+  const { user, isLoading, isDriver, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -31,6 +31,23 @@ const DriverLayout = () => {
 
   if (!user) {
     return null;
+  }
+
+  if (!isDriver) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center p-8 max-w-md">
+          <AlertTriangle className="h-16 w-16 mx-auto mb-4 text-destructive" />
+          <h1 className="text-2xl font-serif font-bold mb-2">Access Denied</h1>
+          <p className="text-muted-foreground mb-6">
+            You don't have driver privileges. Please contact an administrator to get access.
+          </p>
+          <Button onClick={() => navigate("/")} variant="outline">
+            Return Home
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   const navItems = [
