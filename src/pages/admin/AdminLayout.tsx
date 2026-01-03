@@ -58,9 +58,14 @@ const AdminLayout = () => {
       {/* Mobile Header */}
       <header className="lg:hidden sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between p-4">
-          <div className="flex items-center gap-2">
-            <Logo size="sm" variant="default" showTagline={false} />
-            <span className="text-sm font-semibold text-muted-foreground">Admin</span>
+          <div className="flex items-center gap-3">
+            <Link to="/" className="text-muted-foreground hover:text-foreground">
+              <ChevronLeft className="h-5 w-5" />
+            </Link>
+            <div className="flex items-center gap-2">
+              <Logo size="sm" variant="default" showTagline={false} />
+              <span className="text-sm font-semibold text-muted-foreground">Admin</span>
+            </div>
           </div>
           <Button variant="ghost" size="icon" onClick={handleSignOut}>
             <LogOut className="h-5 w-5" />
