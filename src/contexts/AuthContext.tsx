@@ -34,30 +34,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    supabase.auth.onAuthStateChange((event, session) => {
+    let mounted = true;
+
+    const initAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!mounted) return;
+      
       setSession(session);
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        setTimeout(() => {
-          checkUserRoles(session.user.id);
-        }, 0);
+        await checkUserRoles(session.user.id);
+      }
+      
+      if (mounted) {
+        setIsLoading(false);
+      }
+    };
+
+    initAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return;
+      
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        await checkUserRoles(session.user.id);
       } else {
         setIsAdmin(false);
         setIsDriver(false);
       }
-      setIsLoading(false);
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        checkUserRoles(session.user.id);
-      }
-      setIsLoading(false);
-    });
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {

@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface UserProfile {
   id: string;
@@ -19,6 +20,7 @@ interface UserProfile {
 const Users = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     fetchUsers();
@@ -102,7 +104,7 @@ const Users = () => {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4 lg:p-8">
       <h1 className="text-2xl font-serif font-bold mb-6">Users</h1>
 
       <Card>
@@ -110,6 +112,33 @@ const Users = () => {
           {users.length === 0 ? (
             <div className="p-8 text-center text-muted-foreground">
               No users found
+            </div>
+          ) : isMobile ? (
+            <div className="divide-y divide-border">
+              {users.map((user) => (
+                <div key={user.id} className="p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium">{user.full_name || "N/A"}</h3>
+                      <p className="text-sm text-muted-foreground truncate">{user.email || "N/A"}</p>
+                      <p className="text-sm text-muted-foreground">{user.phone || "N/A"}</p>
+                    </div>
+                    <Select
+                      value={user.role}
+                      onValueChange={(value: "admin" | "user") => handleRoleChange(user.user_id, value)}
+                    >
+                      <SelectTrigger className="w-24">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="user">User</SelectItem>
+                        <SelectItem value="admin">Admin</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Joined: {formatDate(user.created_at)}</p>
+                </div>
+              ))}
             </div>
           ) : (
             <Table>

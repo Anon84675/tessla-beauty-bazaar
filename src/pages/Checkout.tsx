@@ -41,28 +41,22 @@ const Checkout = () => {
     notes: "",
   });
 
-  // Calculate delivery cost based on tiered pricing
-  const totalItems = state.items.reduce((sum, item) => sum + item.quantity, 0);
-  
+  // Calculate delivery cost - simple flat rate tiers
   const calculateDeliveryCost = () => {
-    if (totalPrice >= 50000) {
-      return totalPrice * 0.15; // 15% for >50k
-    } else if (totalPrice >= 35000) {
-      return totalPrice * 0.165; // 16.5% for >35k
+    if (totalPrice >= 20000) {
+      return 0; // Free delivery for orders 20k+
     } else if (totalPrice >= 10000) {
-      return totalPrice * 0.10; // 10% for >10k
+      return 500; // KSh 500 for 10k-20k
+    } else if (totalPrice >= 5000) {
+      return 350; // KSh 350 for 5k-10k
     } else {
-      // <10k pricing based on quantity
-      if (totalItems >= 10) {
-        return totalPrice * 0.095; // 9.5% for >10pcs
-      } else {
-        return totalPrice * 0.08; // 8% for <10pcs
-      }
+      return 250; // KSh 250 for orders under 5k
     }
   };
 
   const deliveryCost = calculateDeliveryCost();
   const orderTotal = totalPrice + deliveryCost;
+  const totalItems = state.items.reduce((sum, item) => sum + item.quantity, 0);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -323,9 +317,16 @@ const Checkout = () => {
                     <span>{formatPrice(totalPrice)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Delivery ({totalItems} item{totalItems > 1 ? 's' : ''})</span>
-                    <span>{formatPrice(deliveryCost)}</span>
+                    <span className="text-muted-foreground">Delivery</span>
+                    <span className={deliveryCost === 0 ? "text-green-600 font-medium" : ""}>
+                      {deliveryCost === 0 ? "FREE" : formatPrice(deliveryCost)}
+                    </span>
                   </div>
+                  {deliveryCost > 0 && totalPrice < 20000 && (
+                    <p className="text-xs text-muted-foreground">
+                      Add {formatPrice(20000 - totalPrice)} more for free delivery!
+                    </p>
+                  )}
                 </div>
 
                 <Separator />

@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import ImageUpload from "@/components/admin/ImageUpload";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { categories } from "@/data/products";
 
 interface Product {
@@ -35,6 +36,7 @@ const Products = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const isMobile = useIsMobile();
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -185,7 +187,7 @@ const Products = () => {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4 lg:p-8">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-serif font-bold">Products</h1>
         <Dialog open={isDialogOpen} onOpenChange={(open) => {
@@ -345,6 +347,50 @@ const Products = () => {
           {products.length === 0 ? (
             <div className="p-8 text-center text-muted-foreground">
               No products yet. Click "Add Product" to create one.
+            </div>
+          ) : isMobile ? (
+            <div className="divide-y divide-border">
+              {products.map((product) => (
+                <div key={product.id} className="p-4 space-y-3">
+                  <div className="flex gap-3">
+                    {product.images && product.images.length > 0 ? (
+                      <img
+                        src={product.images[0]}
+                        alt={product.name}
+                        className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
+                      />
+                    ) : (
+                      <div className="w-16 h-16 bg-secondary rounded-lg flex items-center justify-center text-muted-foreground text-xs flex-shrink-0">
+                        No img
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium truncate">{product.name}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {categories.find((c) => c.id === product.category)?.name || product.category}
+                      </p>
+                      <p className="text-sm font-semibold">{formatPrice(product.price)}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs px-2 py-1 rounded-full ${
+                        product.in_stock ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+                      }`}>
+                        {product.in_stock ? `${product.stock_quantity} in stock` : "Out of Stock"}
+                      </span>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" onClick={() => handleEdit(product)}>
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                      <Button size="sm" variant="outline" className="text-destructive" onClick={() => handleDelete(product.id)}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           ) : (
             <Table>

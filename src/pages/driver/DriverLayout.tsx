@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { Outlet, Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { Truck, Package, LogOut, Home, CheckCircle, Clock, AlertTriangle } from "lucide-react";
+import { Truck, Package, LogOut, Home, CheckCircle, ChevronLeft, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Logo from "@/components/brand/Logo";
 
@@ -61,7 +61,12 @@ const DriverLayout = () => {
       {/* Mobile Header */}
       <header className="lg:hidden sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border">
         <div className="flex items-center justify-between p-4">
-          <Logo size="sm" variant="default" showTagline={false} />
+          <div className="flex items-center gap-3">
+            <Link to="/" className="text-muted-foreground hover:text-foreground">
+              <ChevronLeft className="h-5 w-5" />
+            </Link>
+            <Logo size="sm" variant="default" showTagline={false} />
+          </div>
           <Button variant="ghost" size="icon" onClick={handleSignOut}>
             <LogOut className="h-5 w-5" />
           </Button>
