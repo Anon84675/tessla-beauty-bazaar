@@ -41,6 +41,29 @@ const Checkout = () => {
     notes: "",
   });
 
+  // Calculate delivery cost based on tiered pricing
+  const totalItems = state.items.reduce((sum, item) => sum + item.quantity, 0);
+  
+  const calculateDeliveryCost = () => {
+    if (totalPrice >= 50000) {
+      return totalPrice * 0.15; // 15% for >50k
+    } else if (totalPrice >= 35000) {
+      return totalPrice * 0.165; // 16.5% for >35k
+    } else if (totalPrice >= 10000) {
+      return totalPrice * 0.10; // 10% for >10k
+    } else {
+      // <10k pricing based on quantity
+      if (totalItems >= 10) {
+        return totalPrice * 0.095; // 9.5% for >10pcs
+      } else {
+        return totalPrice * 0.08; // 8% for <10pcs
+      }
+    }
+  };
+
+  const deliveryCost = calculateDeliveryCost();
+  const orderTotal = totalPrice + deliveryCost;
+
   useEffect(() => {
     if (!isLoading && !user) {
       toast.error("Please sign in to checkout");
@@ -92,7 +115,7 @@ const Checkout = () => {
         .from("orders")
         .insert({
           user_id: user.id,
-          total_amount: totalPrice,
+          total_amount: orderTotal,
           customer_name: formData.name,
           customer_email: formData.email,
           customer_phone: formData.phone,
@@ -261,7 +284,7 @@ const Checkout = () => {
                   </div>
 
                   <Button type="submit" className="w-full mt-6" size="lg" disabled={isSubmitting}>
-                    {isSubmitting ? "Processing..." : `Place Order - ${formatPrice(totalPrice)}`}
+                    {isSubmitting ? "Processing..." : `Place Order - ${formatPrice(orderTotal)}`}
                   </Button>
                 </form>
               </CardContent>
@@ -300,8 +323,8 @@ const Checkout = () => {
                     <span>{formatPrice(totalPrice)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Delivery</span>
-                    <span className="text-green-600">Free</span>
+                    <span className="text-muted-foreground">Delivery ({totalItems} item{totalItems > 1 ? 's' : ''})</span>
+                    <span>{formatPrice(deliveryCost)}</span>
                   </div>
                 </div>
 
@@ -309,7 +332,7 @@ const Checkout = () => {
 
                 <div className="flex justify-between font-bold text-lg">
                   <span>Total</span>
-                  <span>{formatPrice(totalPrice)}</span>
+                  <span>{formatPrice(orderTotal)}</span>
                 </div>
               </CardContent>
             </Card>
