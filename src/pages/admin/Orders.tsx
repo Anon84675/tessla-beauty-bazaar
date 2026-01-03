@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Eye, Search } from "lucide-react";
+import { Eye, Search, MapPin, Phone, Calendar, Package } from "lucide-react";
 
 type OrderStatus = "pending" | "paid" | "dispatched" | "delivered" | "returned" | "cancelled";
 
@@ -159,6 +159,13 @@ const Orders = () => {
     });
   };
 
+  const formatShortDate = (date: string) => {
+    return new Date(date).toLocaleDateString("en-KE", {
+      day: "numeric",
+      month: "short",
+    });
+  };
+
   const statusColors: Record<OrderStatus, string> = {
     pending: "bg-amber-100 text-amber-700",
     paid: "bg-blue-100 text-blue-700",
@@ -170,19 +177,19 @@ const Orders = () => {
 
   if (isLoading) {
     return (
-      <div className="p-8 flex items-center justify-center">
+      <div className="p-4 lg:p-8 flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   return (
-    <div className="p-8">
-      <h1 className="text-2xl font-serif font-bold mb-6">Orders</h1>
+    <div className="p-4 lg:p-8">
+      <h1 className="text-xl lg:text-2xl font-serif font-bold mb-4 lg:mb-6">Orders</h1>
 
       {/* Filters */}
-      <div className="flex gap-4 mb-6">
-        <div className="relative flex-1 max-w-sm">
+      <div className="flex flex-col sm:flex-row gap-3 mb-4 lg:mb-6">
+        <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             placeholder="Search orders..."
@@ -192,7 +199,7 @@ const Orders = () => {
           />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-40">
+          <SelectTrigger className="w-full sm:w-40">
             <SelectValue placeholder="Filter by status" />
           </SelectTrigger>
           <SelectContent>
@@ -207,7 +214,8 @@ const Orders = () => {
         </Select>
       </div>
 
-      <Card>
+      {/* Desktop Table View */}
+      <Card className="hidden lg:block">
         <CardContent className="p-0">
           {filteredOrders.length === 0 ? (
             <div className="p-8 text-center text-muted-foreground">
@@ -257,6 +265,63 @@ const Orders = () => {
         </CardContent>
       </Card>
 
+      {/* Mobile Card View */}
+      <div className="lg:hidden space-y-3">
+        {filteredOrders.length === 0 ? (
+          <Card>
+            <CardContent className="p-8 text-center">
+              <Package className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+              <p className="text-muted-foreground">
+                {orders.length === 0 ? "No orders yet" : "No matching orders found"}
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          filteredOrders.map((order) => (
+            <Card key={order.id} className="overflow-hidden">
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <p className="font-semibold">{order.customer_name}</p>
+                    <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                      <Calendar className="h-3 w-3" />
+                      {formatShortDate(order.created_at)}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-sm">{formatPrice(order.total_amount)}</p>
+                    <span className={`text-xs px-2 py-0.5 rounded-full inline-block mt-1 ${statusColors[order.status]}`}>
+                      {order.status}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="space-y-1 text-sm text-muted-foreground mb-3">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-3 w-3 flex-shrink-0" />
+                    <span className="truncate">{order.delivery_city}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-3 w-3 flex-shrink-0" />
+                    <span>{order.customer_phone}</span>
+                  </div>
+                </div>
+
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full"
+                  onClick={() => handleViewOrder(order)}
+                >
+                  <Eye className="w-4 h-4 mr-2" />
+                  View Details
+                </Button>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
+
       {/* Order Detail Dialog */}
       <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -266,10 +331,10 @@ const Orders = () => {
           
           {selectedOrder && (
             <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-muted-foreground">Order ID</Label>
-                  <p className="font-mono text-sm">{selectedOrder.id}</p>
+                  <p className="font-mono text-sm break-all">{selectedOrder.id}</p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Date</Label>
@@ -277,7 +342,7 @@ const Orders = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-muted-foreground">Customer</Label>
                   <p className="font-medium">{selectedOrder.customer_name}</p>
@@ -291,7 +356,7 @@ const Orders = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-muted-foreground">Status</Label>
                   <Select
@@ -319,11 +384,12 @@ const Orders = () => {
 
               <div>
                 <Label className="text-muted-foreground">Payment Reference</Label>
-                <div className="flex gap-2 mt-1">
+                <div className="flex flex-col sm:flex-row gap-2 mt-1">
                   <Input
                     placeholder="Enter transaction ID"
                     defaultValue={selectedOrder.payment_reference || ""}
                     id={`payment-ref-${selectedOrder.id}`}
+                    className="flex-1"
                   />
                   <Button
                     variant="outline"
