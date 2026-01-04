@@ -242,15 +242,15 @@ const ProductDetail = () => {
               <div className="grid grid-cols-3 gap-4 pt-6 border-t border-border">
                 <div className="text-center">
                   <Truck className="h-6 w-6 mx-auto text-primary mb-2" />
-                  <p className="text-xs text-muted-foreground">Free Delivery</p>
+                  <p className="text-xs text-muted-foreground">Instant Delivery</p>
                 </div>
                 <div className="text-center">
                   <Shield className="h-6 w-6 mx-auto text-primary mb-2" />
-                  <p className="text-xs text-muted-foreground">12-Month Warranty</p>
+                  <p className="text-xs text-muted-foreground">Quality Guaranteed</p>
                 </div>
                 <div className="text-center">
                   <RotateCcw className="h-6 w-6 mx-auto text-primary mb-2" />
-                  <p className="text-xs text-muted-foreground">14-Day Returns</p>
+                  <p className="text-xs text-muted-foreground">7-Day Returns</p>
                 </div>
               </div>
             </motion.div>

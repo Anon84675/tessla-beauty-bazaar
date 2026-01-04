@@ -1,16 +1,16 @@
 import { motion } from "framer-motion";
-import { Truck, Shield, Headphones, CreditCard, RefreshCw, Award } from "lucide-react";
+import { Truck, Shield, Headphones, CreditCard, RefreshCw, Award, ThumbsUp } from "lucide-react";
 
 const features = [
   {
     icon: Truck,
-    title: "Free Delivery",
-    description: "On orders over KSh 50,000"
+    title: "Instant Delivery",
+    description: "For all orders"
   },
   {
-    icon: Shield,
-    title: "12-Month Warranty",
-    description: "On all equipment"
+    icon: ThumbsUp,
+    title: "99% Satisfaction",
+    description: "Customers Love Us"
   },
   {
     icon: Headphones,
@@ -25,7 +25,7 @@ const features = [
   {
     icon: RefreshCw,
     title: "Easy Returns",
-    description: "14-day return policy"
+    description: "7-day return policy"
   },
   {
     icon: Award,

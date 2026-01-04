@@ -24,7 +24,7 @@ const HeroSlider = () => {
       description: "Heavy-duty hydraulic chairs with vintage aesthetics and modern functionality for the discerning barber.",
       image: "https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=1200&h=800&fit=crop",
       cta: { text: "View Collection", link: "/shop?category=barber-chairs" },
-      accent: "Free delivery over KSh 50,000"
+      accent: "Instant Delivery Available"
     },
     {
       title: "Spa & Wellness",
@@ -32,7 +32,7 @@ const HeroSlider = () => {
       description: "Create the ultimate relaxation sanctuary with our premium massage tables, steamers, and spa accessories.",
       image: "https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=1200&h=800&fit=crop",
       cta: { text: "Explore Spa", link: "/shop?category=spa-equipment" },
-      accent: "12-month warranty included"
+      accent: "Top-Rated by Experts"
     },
   ];
 

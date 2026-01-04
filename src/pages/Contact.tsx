@@ -24,7 +24,7 @@ const Contact = () => {
         <section className="py-16 bg-gradient-hero">
           <div className="container text-center">
             <h1 className="font-serif text-4xl md:text-5xl font-bold mb-4">Contact Us</h1>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">Have questions? We'd love to hear from you.</p>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">Have Questions or Feedback? We'd love to hear from you.</p>
           </div>
         </section>
 
@@ -35,10 +35,13 @@ const Contact = () => {
                 <h2 className="font-serif text-2xl font-bold mb-6">Get in Touch</h2>
                 <div className="space-y-6">
                   {[
-                    { icon: MapPin, title: "Address", content: "123 Kenyatta Avenue, Nairobi, Kenya" },
-                    { icon: Phone, title: "Phone", content: "+254 742 324 193" },
-                    { icon: Mail, title: "Email", content: "sales@tesslaequipment.com" },
-                    { icon: Clock, title: "Hours", content: "Mon-Fri: 9AM-6PM, Sat: 10AM-4PM" },
+                    { icon: MapPin, title: "Location", content: <pre>Raiciri House 2nd Floor Shop 203,<br />
+                  Next to Accra Hotel Building <br />
+                  Accra Road, Embassava Buses Stage <br />
+                  Nairobi, Kenya</pre>},
+                    { icon: Phone, title: "Phone", content: "+254 740 478 353" },
+                    { icon: Mail, title: "Email", content: "esther.muthoni4@icloud.com" },
+                    { icon: Clock, title: "Hours", content: "Mon-Sat: 8:30AM-5PM" },
                   ].map((item) => (
                     <div key={item.title} className="flex gap-4">
                       <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">

@@ -52,18 +52,18 @@ const Header = () => {
       <div className="bg-gradient-dark text-primary-foreground hidden sm:block">
         <div className="container flex items-center justify-between py-2 text-sm">
           <div className="flex items-center gap-4 md:gap-6">
-            <a href="mailto:sales@tesslaequipment.com" className="flex items-center gap-2 hover:text-accent transition-colors group">
+            <a href="mailto:esther.muthoni4@icloud.com" className="flex items-center gap-2 hover:text-accent transition-colors group">
               <Mail className="h-4 w-4 group-hover:scale-110 transition-transform" />
-              <span className="hidden md:inline">sales@tesslaequipment.com</span>
+              <span className="hidden md:inline">esther.muthoni4@icloud.com</span>
             </a>
             <a href="tel:+254742324193" className="flex items-center gap-2 hover:text-accent transition-colors group">
               <Phone className="h-4 w-4 group-hover:scale-110 transition-transform" />
-              <span className="hidden md:inline">+254 742 324 193</span>
+              <span className="hidden md:inline">+254 740 478 353</span>
             </a>
           </div>
           <div className="flex items-center gap-2">
             <Sparkles className="h-3.5 w-3.5 text-accent" />
-            <span className="text-xs font-medium hidden lg:inline">Free Delivery on Orders Over KSh 50,000</span>
+            <span className="text-xs font-medium hidden lg:inline">Free Delivery on Orders Over KSh 50k</span>
             <span className="text-xs font-medium lg:hidden">Free Delivery 50K+</span>
           </div>
         </div>

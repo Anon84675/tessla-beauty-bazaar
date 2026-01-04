@@ -8,7 +8,7 @@ const About = () => {
   const stats = [
     { number: "500+", label: "Happy Clients" },
     { number: "2000+", label: "Products Sold" },
-    { number: "8+", label: "Years Experience" },
+    { number: "7+", label: "Years Experience" },
     { number: "50+", label: "Brands Available" },
   ];
 
@@ -60,7 +60,7 @@ const About = () => {
                 Your Partner in Professional Beauty Equipment
               </h1>
               <p className="text-lg text-muted-foreground leading-relaxed">
-                Since 2016, Tessla Equipment Stores has been the trusted source for professional 
+                Since 2018, Tessla Equipment Stores has been the trusted source for professional 
                 salon, barbershop, and spa equipment in Kenya. We're committed to helping beauty 
                 professionals succeed with quality products and exceptional service.
               </p>
@@ -135,7 +135,7 @@ const About = () => {
                       <Clock className="h-6 w-6 text-primary" />
                     </div>
                     <div>
-                      <p className="font-semibold">Since 2016</p>
+                      <p className="font-semibold">Since 2018</p>
                       <p className="text-sm text-muted-foreground">Serving Professionals</p>
                     </div>
                   </div>
@@ -204,18 +204,18 @@ const About = () => {
                     is ready to help you find the perfect equipment for your business.
                   </p>
                   <div className="space-y-3">
-                    <p className="flex items-center gap-3">
+                    <p className="flex items-center gap-2">
                       <span className="h-2 w-2 rounded-full bg-accent" />
-                      123 Kenyatta Avenue, Nairobi
+                  Raiciri House 2nd Floor Shop 203,<br />
+                  Next to Accra Hotel Building <br />
+                  Accra Road, Embassava Buses Stage <br />
+                  Nairobi, Kenya
                     </p>
                     <p className="flex items-center gap-3">
                       <span className="h-2 w-2 rounded-full bg-accent" />
-                      Mon - Fri: 9:00 AM - 6:00 PM
+                      Mon - Sat: 8:30 AM - 5:00 PM
                     </p>
-                    <p className="flex items-center gap-3">
-                      <span className="h-2 w-2 rounded-full bg-accent" />
-                      Sat: 10:00 AM - 4:00 PM
-                    </p>
+                    
                   </div>
                 </div>
                 <div className="aspect-video rounded-2xl overflow-hidden">

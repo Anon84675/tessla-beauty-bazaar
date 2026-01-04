@@ -21,10 +21,10 @@ const Footer = () => {
               Quality products for professionals who demand excellence.
             </p>
             <div className="flex gap-4">
-              <a href="#" className="h-10 w-10 rounded-full bg-foreground/10 flex items-center justify-center hover:bg-primary transition-colors">
+              <a href="https://www.facebook.com/share/17fpBXup2c/" className="h-10 w-10 rounded-full bg-foreground/10 flex items-center justify-center hover:bg-primary transition-colors">
                 <Facebook className="h-5 w-5" />
               </a>
-              <a href="#" className="h-10 w-10 rounded-full bg-foreground/10 flex items-center justify-center hover:bg-primary transition-colors">
+              <a href="https://www.instagram.com/tessla_31?igsh=cngweHV6bnc0OTR2" className="h-10 w-10 rounded-full bg-foreground/10 flex items-center justify-center hover:bg-primary transition-colors">
                 <Instagram className="h-5 w-5" />
               </a>
               <a href="#" className="h-10 w-10 rounded-full bg-foreground/10 flex items-center justify-center hover:bg-primary transition-colors">
@@ -95,20 +95,22 @@ const Footer = () => {
               <li className="flex items-start gap-3">
                 <MapPin className="h-5 w-5 text-accent mt-0.5" />
                 <span className="text-sm text-muted-foreground">
-                  123 Kenyatta Avenue,<br />
+                  Raiciri House 2nd Floor Shop 203,<br />
+                  Next to Accra Hotel Building <br />
+                  Accra Road, Embassava Buses Stage <br />
                   Nairobi, Kenya
                 </span>
               </li>
               <li className="flex items-center gap-3">
                 <Phone className="h-5 w-5 text-accent" />
-                <a href="tel:+254742324193" className="text-sm text-muted-foreground hover:text-accent transition-colors">
-                  +254 742 324 193
+                <a href="tel:+254740478353" className="text-sm text-muted-foreground hover:text-accent transition-colors">
+                  +254 740 478 353
                 </a>
               </li>
               <li className="flex items-center gap-3">
                 <Mail className="h-5 w-5 text-accent" />
-                <a href="mailto:sales@tesslaequipment.com" className="text-sm text-muted-foreground hover:text-accent transition-colors">
-                  sales@tesslaequipment.com
+                <a href="mailto:esther.muthoni4@icloud.com" className="text-sm text-muted-foreground hover:text-accent transition-colors">
+                  esther.muthoni4@icloud.com
                 </a>
               </li>
             </ul>

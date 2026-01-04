@@ -11,7 +11,7 @@ const faqData = [
     { q: "How do I track my order?", a: "You'll receive tracking information via SMS and email once your order ships." },
   ]},
   { category: "Delivery", id: "delivery", questions: [
-    { q: "What are the delivery options?", a: "We offer standard delivery (3-5 business days) and express delivery (1-2 business days) within Nairobi. Countrywide delivery takes 5-7 business days." },
+    { q: "What are the delivery options?", a: "We offer standard delivery (3-5 business days) and express delivery (Hours, 1-2 business days) within Nairobi. Countrywide delivery takes 5-7 business days." },
     { q: "Is delivery free?", a: "Yes! Free delivery on orders over KSh 50,000. Orders below this have a small delivery fee based on location." },
     { q: "Do you deliver outside Kenya?", a: "Currently we deliver within Kenya only. Contact us for special arrangements to neighboring countries." },
   ]},
@@ -21,7 +21,7 @@ const faqData = [
     { q: "Can I pay in installments?", a: "Yes, we offer payment plans for orders over KSh 50,000. Contact us for details." },
   ]},
   { category: "Returns & Refunds", id: "returns", questions: [
-    { q: "What is your return policy?", a: "14-day return policy for unused items in original packaging. Contact us to initiate a return." },
+    { q: "What is your return policy?", a: "7-day return policy for unused items in original packaging. Contact us to initiate a return." },
     { q: "How long do refunds take?", a: "Refunds are processed within 5-7 business days after we receive the returned item." },
     { q: "What if my item arrives damaged?", a: "Contact us immediately with photos. We'll arrange a replacement or full refund at no extra cost." },
   ]},
