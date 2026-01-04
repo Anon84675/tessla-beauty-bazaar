@@ -10,11 +10,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { toast } from "sonner";
 import { z } from "zod";
-import { ArrowLeft, CreditCard, Phone } from "lucide-react";
+import { ArrowLeft, CreditCard, Phone, Loader2, CheckCircle, XCircle } from "lucide-react";
 
 const checkoutSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(100),
@@ -31,6 +32,10 @@ const Checkout = () => {
   const { user, isLoading } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("mpesa");
+  const [mpesaDialogOpen, setMpesaDialogOpen] = useState(false);
+  const [mpesaStatus, setMpesaStatus] = useState<"pending" | "processing" | "success" | "failed">("pending");
+  const [checkoutRequestId, setCheckoutRequestId] = useState<string | null>(null);
+  const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
     name: "",
@@ -110,6 +115,7 @@ const Checkout = () => {
         .insert({
           user_id: user.id,
           total_amount: orderTotal,
+          delivery_fee: deliveryCost,
           customer_name: formData.name,
           customer_email: formData.email,
           customer_phone: formData.phone,
@@ -127,7 +133,7 @@ const Checkout = () => {
       // Create order items
       const orderItems = state.items.map(item => ({
         order_id: order.id,
-        product_id: null, // Using static products for now
+        product_id: null,
         product_name: item.product.name,
         quantity: item.quantity,
         unit_price: item.product.price,
@@ -140,14 +146,108 @@ const Checkout = () => {
 
       if (itemsError) throw itemsError;
 
-      clearCart();
-      toast.success("Order placed successfully!");
-      navigate("/");
+      setCurrentOrderId(order.id);
+
+      if (paymentMethod === "mpesa") {
+        // Initiate M-Pesa STK Push
+        setMpesaDialogOpen(true);
+        setMpesaStatus("processing");
+
+        const { data: stkData, error: stkError } = await supabase.functions.invoke("mpesa-stk-push", {
+          body: {
+            phone: formData.phone,
+            amount: orderTotal,
+            orderId: order.id,
+            accountReference: `ORD-${order.id.slice(0, 8).toUpperCase()}`,
+          },
+        });
+
+        if (stkError || !stkData?.success) {
+          setMpesaStatus("failed");
+          toast.error(stkData?.error || "Failed to initiate M-Pesa payment");
+          return;
+        }
+
+        setCheckoutRequestId(stkData.checkoutRequestId);
+        toast.success("Please check your phone for the M-Pesa prompt");
+        
+        // Start polling for payment status
+        pollPaymentStatus(stkData.checkoutRequestId, order.id);
+      } else {
+        // PayPal flow - just create the order and show pending
+        clearCart();
+        toast.success("Order placed! Complete payment via PayPal.");
+        navigate("/");
+      }
     } catch (error: any) {
       toast.error(error.message || "Failed to place order");
+      setMpesaDialogOpen(false);
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const pollPaymentStatus = async (requestId: string, orderId: string) => {
+    let attempts = 0;
+    const maxAttempts = 30; // Poll for 60 seconds max (every 2 seconds)
+    
+    const checkStatus = async () => {
+      attempts++;
+      
+      try {
+        // Check order status in database
+        const { data: orderData, error } = await supabase
+          .from("orders")
+          .select("status")
+          .eq("id", orderId)
+          .single();
+
+        if (!error && orderData?.status === "paid") {
+          setMpesaStatus("success");
+          clearCart();
+          setTimeout(() => {
+            setMpesaDialogOpen(false);
+            navigate("/");
+          }, 2000);
+          return;
+        }
+
+        // Also check via query endpoint
+        const { data: queryData } = await supabase.functions.invoke("mpesa-query", {
+          body: { checkoutRequestId: requestId },
+        });
+
+        if (queryData?.status === "success") {
+          setMpesaStatus("success");
+          clearCart();
+          setTimeout(() => {
+            setMpesaDialogOpen(false);
+            navigate("/");
+          }, 2000);
+          return;
+        }
+
+        if (queryData?.status === "failed" || queryData?.status === "cancelled" || queryData?.status === "timeout") {
+          setMpesaStatus("failed");
+          return;
+        }
+
+        // Continue polling if still pending and within attempts
+        if (attempts < maxAttempts) {
+          setTimeout(checkStatus, 2000);
+        } else {
+          setMpesaStatus("pending");
+        }
+      } catch (error) {
+        console.error("Error polling status:", error);
+        if (attempts < maxAttempts) {
+          setTimeout(checkStatus, 2000);
+        }
+      }
+    };
+
+    // Start checking after 5 seconds (give user time to enter PIN)
+    setTimeout(checkStatus, 5000);
   };
 
   if (isLoading || state.items.length === 0) {
@@ -340,6 +440,82 @@ const Checkout = () => {
           </div>
         </div>
       </main>
+
+      {/* M-Pesa Payment Dialog */}
+      <Dialog open={mpesaDialogOpen} onOpenChange={(open) => {
+        if (!open && mpesaStatus !== "processing") {
+          setMpesaDialogOpen(false);
+        }
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center">M-Pesa Payment</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center py-6 space-y-4">
+            {mpesaStatus === "processing" && (
+              <>
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                  <Loader2 className="h-8 w-8 text-green-600 animate-spin" />
+                </div>
+                <div className="text-center">
+                  <h3 className="font-semibold text-lg">Check your phone</h3>
+                  <p className="text-muted-foreground text-sm mt-1">
+                    An M-Pesa prompt has been sent to <span className="font-medium">{formData.phone}</span>
+                  </p>
+                  <p className="text-muted-foreground text-sm mt-2">
+                    Enter your M-Pesa PIN to complete payment of <span className="font-bold">{formatPrice(orderTotal)}</span>
+                  </p>
+                </div>
+              </>
+            )}
+            {mpesaStatus === "success" && (
+              <>
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                  <CheckCircle className="h-8 w-8 text-green-600" />
+                </div>
+                <div className="text-center">
+                  <h3 className="font-semibold text-lg text-green-600">Payment Successful!</h3>
+                  <p className="text-muted-foreground text-sm mt-1">
+                    Your order has been placed successfully.
+                  </p>
+                </div>
+              </>
+            )}
+            {mpesaStatus === "failed" && (
+              <>
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
+                  <XCircle className="h-8 w-8 text-red-600" />
+                </div>
+                <div className="text-center">
+                  <h3 className="font-semibold text-lg text-red-600">Payment Failed</h3>
+                  <p className="text-muted-foreground text-sm mt-1">
+                    The payment was cancelled or failed.
+                  </p>
+                </div>
+                <Button onClick={() => setMpesaDialogOpen(false)} className="mt-4">
+                  Try Again
+                </Button>
+              </>
+            )}
+            {mpesaStatus === "pending" && (
+              <>
+                <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center">
+                  <Phone className="h-8 w-8 text-amber-600" />
+                </div>
+                <div className="text-center">
+                  <h3 className="font-semibold text-lg">Payment Pending</h3>
+                  <p className="text-muted-foreground text-sm mt-1">
+                    We're still waiting for confirmation. Check your phone or try again.
+                  </p>
+                </div>
+                <Button onClick={() => setMpesaDialogOpen(false)} className="mt-4">
+                  Close
+                </Button>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Footer />
     </div>
