@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useProductById, useProducts } from "@/hooks/useProducts";
 import { useCart } from "@/contexts/CartContext";
 import ProductCard from "@/components/products/ProductCard";
+import ProductReviews from "@/components/products/ProductReviews";
 
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -275,6 +276,11 @@ const ProductDetail = () => {
         </section>
 
         {/* Related Products */}
+        {/* Product Reviews */}
+        <div className="container">
+          <ProductReviews productId={product.id} />
+        </div>
+
         {relatedProducts.length > 0 && (
           <section className="container py-12">
             <h2 className="font-serif text-2xl font-bold mb-8">Related Products</h2>

@@ -20,6 +20,7 @@ interface DeliveryWithOrder {
     delivery_address: string;
     delivery_city: string;
     total_amount: number;
+    delivery_fee: number;
     currency: string;
     status: string;
   };
@@ -51,7 +52,7 @@ const ActiveDeliveries = () => {
           status,
           assigned_at,
           picked_up_at,
-          order:orders(id, customer_name, customer_phone, delivery_address, delivery_city, total_amount, currency, status)
+          order:orders(id, customer_name, customer_phone, delivery_address, delivery_city, total_amount, delivery_fee, currency, status)
         `)
         .eq("driver_id", user.id)
         .neq("status", "delivered")
@@ -78,7 +79,7 @@ const ActiveDeliveries = () => {
     fetchDeliveries();
   }, [user]);
 
-  const updateStatus = async (deliveryId: string, orderId: string, newStatus: string) => {
+  const updateStatus = async (deliveryId: string, orderId: string, newStatus: string, customerName: string, totalAmount: number) => {
     setUpdatingId(deliveryId);
 
     try {
@@ -104,6 +105,16 @@ const ActiveDeliveries = () => {
         .from("orders")
         .update({ status: orderStatus as "dispatched" | "delivered" })
         .eq("id", orderId);
+
+      // Create admin notification when delivered
+      if (newStatus === "delivered") {
+        await supabase.from("admin_notifications").insert({
+          type: "order_delivered",
+          title: "Order Delivered",
+          message: `Order for ${customerName} (KSh ${totalAmount.toLocaleString()}) has been successfully delivered.`,
+          order_id: orderId,
+        });
+      }
 
       toast.success(`Status updated to "${newStatus.replace("_", " ")}"`);
       fetchDeliveries();
@@ -172,9 +183,11 @@ const ActiveDeliveries = () => {
                         Assigned: {format(new Date(delivery.assigned_at), "MMM d, h:mm a")}
                       </p>
                     </div>
-                    <span className="px-2 py-1 bg-primary/20 text-primary text-xs font-medium rounded-full">
-                      {delivery.order.currency} {delivery.order.total_amount.toLocaleString()}
-                    </span>
+                    <div className="text-right">
+                      <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+                        Delivery Fee: {delivery.order.currency} {(delivery.order.delivery_fee || 0).toLocaleString()}
+                      </span>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -225,7 +238,7 @@ const ActiveDeliveries = () => {
                   {nextStatus && (
                     <Button
                       className="w-full"
-                      onClick={() => updateStatus(delivery.id, delivery.order.id, nextStatus)}
+                      onClick={() => updateStatus(delivery.id, delivery.order.id, nextStatus, delivery.order.customer_name, delivery.order.total_amount)}
                       disabled={updatingId === delivery.id}
                     >
                       {updatingId === delivery.id

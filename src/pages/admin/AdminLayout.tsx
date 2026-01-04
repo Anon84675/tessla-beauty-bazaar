@@ -9,10 +9,10 @@ import {
   Users, 
   LogOut,
   ChevronLeft,
-  Menu
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Logo from "@/components/brand/Logo";
+import AdminNotifications from "@/components/admin/AdminNotifications";
 
 const AdminLayout = () => {
   const navigate = useNavigate();
@@ -67,9 +67,12 @@ const AdminLayout = () => {
               <span className="text-sm font-semibold text-muted-foreground">Admin</span>
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={handleSignOut}>
-            <LogOut className="h-5 w-5" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <AdminNotifications />
+            <Button variant="ghost" size="icon" onClick={handleSignOut}>
+              <LogOut className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -81,7 +84,10 @@ const AdminLayout = () => {
               <ChevronLeft className="w-4 h-4" />
               <span className="text-sm">Back to Store</span>
             </Link>
-            <h1 className="text-xl font-serif font-bold mt-4">Admin Portal</h1>
+            <div className="flex items-center justify-between mt-4">
+              <h1 className="text-xl font-serif font-bold">Admin Portal</h1>
+              <AdminNotifications />
+            </div>
           </div>
 
           <nav className="flex-1 p-4 space-y-1">
