@@ -4,10 +4,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Star, User, CheckCircle, Loader2 } from "lucide-react";
+import { Star, User, CheckCircle, Loader2, Pencil, X, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface Review {
   id: string;
@@ -17,9 +17,6 @@ interface Review {
   is_verified_purchase: boolean;
   created_at: string;
   user_id: string;
-  profile?: {
-    full_name: string | null;
-  };
 }
 
 interface ProductReviewsProps {
@@ -33,8 +30,10 @@ const ProductReviews = ({ productId, onReviewAdded }: ProductReviewsProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
-  const [userHasReviewed, setUserHasReviewed] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [userReview, setUserReview] = useState<Review | null>(null);
   const [hasPurchased, setHasPurchased] = useState(false);
+  const [editingReview, setEditingReview] = useState<Review | null>(null);
   
   const [formData, setFormData] = useState({
     rating: 5,
@@ -53,15 +52,7 @@ const ProductReviews = ({ productId, onReviewAdded }: ProductReviewsProps) => {
     try {
       const { data, error } = await supabase
         .from("reviews")
-        .select(`
-          id,
-          rating,
-          title,
-          comment,
-          is_verified_purchase,
-          created_at,
-          user_id
-        `)
+        .select("id, rating, title, comment, is_verified_purchase, created_at, user_id")
         .eq("product_id", productId)
         .order("created_at", { ascending: false });
 
@@ -69,7 +60,8 @@ const ProductReviews = ({ productId, onReviewAdded }: ProductReviewsProps) => {
       setReviews(data || []);
       
       if (user) {
-        setUserHasReviewed(data?.some((r) => r.user_id === user.id) || false);
+        const found = data?.find((r) => r.user_id === user.id);
+        setUserReview(found || null);
       }
     } catch (error) {
       console.error("Error fetching reviews:", error);
@@ -82,13 +74,9 @@ const ProductReviews = ({ productId, onReviewAdded }: ProductReviewsProps) => {
     if (!user) return;
     
     try {
-      // Check if user has purchased this product
       const { data, error } = await supabase
         .from("order_items")
-        .select(`
-          id,
-          order:orders!inner(user_id, status)
-        `)
+        .select(`id, order:orders!inner(user_id, status)`)
         .eq("product_id", productId);
 
       if (error) throw error;
@@ -112,18 +100,36 @@ const ProductReviews = ({ productId, onReviewAdded }: ProductReviewsProps) => {
 
     setIsSubmitting(true);
     try {
-      const { error } = await supabase.from("reviews").insert({
-        product_id: productId,
-        user_id: user.id,
-        rating: formData.rating,
-        title: formData.title || null,
-        comment: formData.comment || null,
-        is_verified_purchase: hasPurchased,
-      });
+      if (editingReview) {
+        // Update existing review
+        const { error } = await supabase
+          .from("reviews")
+          .update({
+            rating: formData.rating,
+            title: formData.title || null,
+            comment: formData.comment || null,
+          })
+          .eq("id", editingReview.id)
+          .eq("user_id", user.id);
 
-      if (error) throw error;
+        if (error) throw error;
+        toast.success("Review updated!");
+        setEditingReview(null);
+      } else {
+        // Create new review
+        const { error } = await supabase.from("reviews").insert({
+          product_id: productId,
+          user_id: user.id,
+          rating: formData.rating,
+          title: formData.title || null,
+          comment: formData.comment || null,
+          is_verified_purchase: hasPurchased,
+        });
 
-      toast.success("Review submitted successfully!");
+        if (error) throw error;
+        toast.success("Review submitted!");
+      }
+
       setShowForm(false);
       setFormData({ rating: 5, title: "", comment: "" });
       fetchReviews();
@@ -132,219 +138,228 @@ const ProductReviews = ({ productId, onReviewAdded }: ProductReviewsProps) => {
       if (error.code === "23505") {
         toast.error("You have already reviewed this product");
       } else {
-        toast.error("Failed to submit review");
+        toast.error("Failed to save review");
       }
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const startEditReview = (review: Review) => {
+    setEditingReview(review);
+    setFormData({
+      rating: review.rating,
+      title: review.title || "",
+      comment: review.comment || "",
+    });
+    setShowForm(true);
+  };
+
+  const cancelEdit = () => {
+    setEditingReview(null);
+    setShowForm(false);
+    setFormData({ rating: 5, title: "", comment: "" });
+  };
+
   const averageRating = reviews.length > 0
     ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
     : 0;
 
-  const ratingDistribution = [5, 4, 3, 2, 1].map((star) => ({
-    star,
-    count: reviews.filter((r) => r.rating === star).length,
-    percentage: reviews.length > 0 
-      ? (reviews.filter((r) => r.rating === star).length / reviews.length) * 100 
-      : 0,
-  }));
-
   if (isLoading) {
     return (
-      <div className="py-8 flex justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      <div className="py-6 flex justify-center">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   return (
-    <section className="py-8">
-      <h2 className="font-serif text-2xl font-bold mb-6">Customer Reviews</h2>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Summary */}
-        <Card>
-          <CardContent className="p-6">
-            <div className="text-center mb-4">
-              <div className="text-4xl font-bold">{averageRating.toFixed(1)}</div>
-              <div className="flex justify-center my-2">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className={`h-5 w-5 ${
-                      i < Math.round(averageRating)
-                        ? "text-accent fill-accent"
-                        : "text-muted-foreground"
-                    }`}
-                  />
-                ))}
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Based on {reviews.length} review{reviews.length !== 1 ? "s" : ""}
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              {ratingDistribution.map(({ star, count, percentage }) => (
-                <div key={star} className="flex items-center gap-2 text-sm">
-                  <span className="w-3">{star}</span>
-                  <Star className="h-3 w-3 text-accent fill-accent" />
-                  <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-accent transition-all"
-                      style={{ width: `${percentage}%` }}
+    <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
+      <div className="border-t border-border pt-6 mt-8">
+        {/* Compact Header - Always Visible */}
+        <CollapsibleTrigger asChild>
+          <button className="w-full flex items-center justify-between py-2 hover:bg-muted/30 rounded-lg px-2 transition-colors">
+            <div className="flex items-center gap-4">
+              <h3 className="font-medium text-base">Customer Reviews</h3>
+              <div className="flex items-center gap-1.5">
+                <div className="flex">
+                  {[...Array(5)].map((_, i) => (
+                    <Star
+                      key={i}
+                      className={`h-3.5 w-3.5 ${
+                        i < Math.round(averageRating)
+                          ? "text-amber-500 fill-amber-500"
+                          : "text-muted-foreground/30"
+                      }`}
                     />
+                  ))}
+                </div>
+                <span className="text-sm text-muted-foreground">
+                  {averageRating.toFixed(1)} ({reviews.length})
+                </span>
+              </div>
+            </div>
+            {isExpanded ? (
+              <ChevronUp className="h-4 w-4 text-muted-foreground" />
+            ) : (
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            )}
+          </button>
+        </CollapsibleTrigger>
+
+        <CollapsibleContent className="pt-4 space-y-4">
+          {/* Write/Edit Review Button */}
+          {user && !showForm && (
+            <div className="flex gap-2">
+              {userReview ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => startEditReview(userReview)}
+                  className="text-sm"
+                >
+                  <Pencil className="h-3.5 w-3.5 mr-1.5" />
+                  Edit Your Review
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowForm(true)}
+                  className="text-sm"
+                >
+                  Write a Review
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* Compact Review Form */}
+          {showForm && (
+            <div className="bg-muted/30 rounded-lg p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">
+                  {editingReview ? "Edit Review" : "Your Review"}
+                </span>
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={cancelEdit}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              <form onSubmit={handleSubmit} className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Rating:</span>
+                  <div className="flex gap-0.5">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, rating: star })}
+                        className="p-0.5"
+                      >
+                        <Star
+                          className={`h-5 w-5 transition-colors ${
+                            star <= formData.rating
+                              ? "text-amber-500 fill-amber-500"
+                              : "text-muted-foreground/30 hover:text-amber-400"
+                          }`}
+                        />
+                      </button>
+                    ))}
                   </div>
-                  <span className="w-8 text-right text-muted-foreground">{count}</span>
+                </div>
+
+                <Input
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  placeholder="Review title (optional)"
+                  maxLength={100}
+                  className="h-9 text-sm"
+                />
+
+                <Textarea
+                  value={formData.comment}
+                  onChange={(e) => setFormData({ ...formData, comment: e.target.value })}
+                  placeholder="Share your experience..."
+                  rows={3}
+                  maxLength={1000}
+                  className="text-sm resize-none"
+                />
+
+                <div className="flex gap-2 justify-end">
+                  <Button type="button" variant="ghost" size="sm" onClick={cancelEdit}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" size="sm" disabled={isSubmitting}>
+                    {isSubmitting ? "Saving..." : editingReview ? "Update" : "Submit"}
+                  </Button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* Reviews List - Compact */}
+          {reviews.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-2">
+              No reviews yet. Be the first to share your experience!
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {reviews.slice(0, isExpanded ? undefined : 3).map((review) => (
+                <div key={review.id} className="flex gap-3 py-2">
+                  <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center flex-shrink-0">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex">
+                        {[...Array(5)].map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`h-3 w-3 ${
+                              i < review.rating
+                                ? "text-amber-500 fill-amber-500"
+                                : "text-muted-foreground/30"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      {review.is_verified_purchase && (
+                        <span className="flex items-center gap-0.5 text-xs text-green-600">
+                          <CheckCircle className="h-3 w-3" />
+                          Verified
+                        </span>
+                      )}
+                      <span className="text-xs text-muted-foreground">
+                        {format(new Date(review.created_at), "MMM d, yyyy")}
+                      </span>
+                      {user && review.user_id === user.id && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-5 px-1.5 text-xs text-muted-foreground"
+                          onClick={() => startEditReview(review)}
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
+                    {review.title && (
+                      <p className="text-sm font-medium mt-0.5">{review.title}</p>
+                    )}
+                    {review.comment && (
+                      <p className="text-sm text-muted-foreground mt-0.5 line-clamp-2">
+                        {review.comment}
+                      </p>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
-
-            {user && !userHasReviewed && (
-              <Button
-                className="w-full mt-6"
-                onClick={() => setShowForm(true)}
-              >
-                Write a Review
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Reviews List */}
-        <div className="lg:col-span-2 space-y-4">
-          {/* Review Form */}
-          {showForm && (
-            <Card className="border-primary">
-              <CardHeader>
-                <CardTitle className="text-lg">Write Your Review</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Rating</label>
-                    <div className="flex gap-1">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <button
-                          key={star}
-                          type="button"
-                          onClick={() => setFormData({ ...formData, rating: star })}
-                          className="p-1"
-                        >
-                          <Star
-                            className={`h-8 w-8 transition-colors ${
-                              star <= formData.rating
-                                ? "text-accent fill-accent"
-                                : "text-muted-foreground hover:text-accent"
-                            }`}
-                          />
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2">
-                      Title (optional)
-                    </label>
-                    <Input
-                      value={formData.title}
-                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                      placeholder="Summarize your experience"
-                      maxLength={100}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2">
-                      Your Review (optional)
-                    </label>
-                    <Textarea
-                      value={formData.comment}
-                      onChange={(e) => setFormData({ ...formData, comment: e.target.value })}
-                      placeholder="Share your experience with this product..."
-                      rows={4}
-                      maxLength={1000}
-                    />
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Button type="submit" disabled={isSubmitting}>
-                      {isSubmitting ? "Submitting..." : "Submit Review"}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setShowForm(false)}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </form>
-              </CardContent>
-            </Card>
           )}
-
-          {/* Reviews */}
-          {reviews.length === 0 ? (
-            <Card>
-              <CardContent className="p-8 text-center">
-                <Star className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-                <p className="text-muted-foreground">No reviews yet. Be the first to review!</p>
-              </CardContent>
-            </Card>
-          ) : (
-            reviews.map((review) => (
-              <Card key={review.id}>
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center">
-                        <User className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-sm">Customer</p>
-                        <p className="text-xs text-muted-foreground">
-                          {format(new Date(review.created_at), "MMM d, yyyy")}
-                        </p>
-                      </div>
-                    </div>
-                    {review.is_verified_purchase && (
-                      <span className="flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">
-                        <CheckCircle className="h-3 w-3" />
-                        Verified Purchase
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-1 mb-2">
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        className={`h-4 w-4 ${
-                          i < review.rating
-                            ? "text-accent fill-accent"
-                            : "text-muted-foreground"
-                        }`}
-                      />
-                    ))}
-                  </div>
-
-                  {review.title && (
-                    <h4 className="font-semibold mb-1">{review.title}</h4>
-                  )}
-                  {review.comment && (
-                    <p className="text-sm text-muted-foreground">{review.comment}</p>
-                  )}
-                </CardContent>
-              </Card>
-            ))
-          )}
-        </div>
+        </CollapsibleContent>
       </div>
-    </section>
+    </Collapsible>
   );
 };
 

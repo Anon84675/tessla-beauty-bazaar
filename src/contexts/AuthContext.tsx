@@ -8,6 +8,7 @@ interface AuthContextType {
   isAdmin: boolean;
   isDriver: boolean;
   isLoading: boolean;
+  rolesLoaded: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -21,35 +22,56 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isAdmin, setIsAdmin] = useState(false);
   const [isDriver, setIsDriver] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [rolesLoaded, setRolesLoaded] = useState(false);
 
-  const checkUserRoles = async (userId: string) => {
-    const { data } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId);
-    
-    const roles = (data || []).map((r) => r.role);
-    setIsAdmin(roles.includes("admin"));
-    setIsDriver(roles.includes("driver"));
+  const checkUserRoles = async (userId: string): Promise<{ admin: boolean; driver: boolean }> => {
+    try {
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId);
+      
+      const roles = (data || []).map((r) => r.role);
+      return {
+        admin: roles.includes("admin"),
+        driver: roles.includes("driver"),
+      };
+    } catch (error) {
+      console.error("Error checking user roles:", error);
+      return { admin: false, driver: false };
+    }
   };
 
   useEffect(() => {
     let mounted = true;
 
     const initAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!mounted) return;
-      
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        await checkUserRoles(session.user.id);
-      }
-      
-      if (mounted) {
-        setIsLoading(false);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!mounted) return;
+        
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          const roles = await checkUserRoles(session.user.id);
+          if (mounted) {
+            setIsAdmin(roles.admin);
+            setIsDriver(roles.driver);
+            setRolesLoaded(true);
+          }
+        } else {
+          if (mounted) {
+            setRolesLoaded(true);
+          }
+        }
+      } catch (error) {
+        console.error("Auth initialization error:", error);
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
     };
 
@@ -58,14 +80,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return;
       
+      // Set loading state for role changes
+      setRolesLoaded(false);
       setSession(session);
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        await checkUserRoles(session.user.id);
+        const roles = await checkUserRoles(session.user.id);
+        if (mounted) {
+          setIsAdmin(roles.admin);
+          setIsDriver(roles.driver);
+          setRolesLoaded(true);
+        }
       } else {
-        setIsAdmin(false);
-        setIsDriver(false);
+        if (mounted) {
+          setIsAdmin(false);
+          setIsDriver(false);
+          setRolesLoaded(true);
+        }
       }
     });
 
@@ -102,7 +134,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, isAdmin, isDriver, isLoading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, session, isAdmin, isDriver, isLoading, rolesLoaded, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );
