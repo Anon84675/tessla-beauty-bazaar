@@ -40,17 +40,29 @@ const ImageUpload = ({ images, onImagesChange, maxImages = 5 }: ImageUploadProps
           continue;
         }
 
-        const fileExt = file.name.split(".").pop();
+        const fileExt = file.name.split(".").pop()?.toLowerCase() || "jpg";
         const fileName = `${crypto.randomUUID()}.${fileExt}`;
         const filePath = `product-images/${fileName}`;
 
         const { error: uploadError } = await supabase.storage
           .from("products")
-          .upload(filePath, file);
+          .upload(filePath, file, {
+            cacheControl: "3600",
+            upsert: false,
+          });
 
         if (uploadError) {
-          console.error("Upload error:", uploadError);
-          toast.error(`Failed to upload ${file.name}`);
+          console.error("Upload error details:", uploadError);
+          // Provide more specific error messages
+          if (uploadError.message?.includes("duplicate")) {
+            toast.error(`File already exists. Try renaming ${file.name}`);
+          } else if (uploadError.message?.includes("permission") || uploadError.message?.includes("policy")) {
+            toast.error("Upload permission denied. Please sign in as admin.");
+          } else if (uploadError.message?.includes("size")) {
+            toast.error(`File ${file.name} exceeds size limit`);
+          } else {
+            toast.error(`Failed to upload ${file.name}: ${uploadError.message || "Unknown error"}`);
+          }
           continue;
         }
 
@@ -65,9 +77,9 @@ const ImageUpload = ({ images, onImagesChange, maxImages = 5 }: ImageUploadProps
         onImagesChange([...images, ...uploadedUrls]);
         toast.success(`${uploadedUrls.length} image(s) uploaded`);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Upload error:", error);
-      toast.error("Failed to upload images");
+      toast.error(error?.message || "Failed to upload images. Please try again.");
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) {

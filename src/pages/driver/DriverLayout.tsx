@@ -6,22 +6,24 @@ import { Button } from "@/components/ui/button";
 import Logo from "@/components/brand/Logo";
 
 const DriverLayout = () => {
-  const { user, isLoading, isDriver, signOut } = useAuth();
+  const { user, isLoading, isDriver, rolesLoaded, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
-    if (!isLoading && !user) {
+    // Wait until both auth and roles are loaded before redirecting
+    if (!isLoading && rolesLoaded && !user) {
       navigate("/driver/auth");
     }
-  }, [user, isLoading, navigate]);
+  }, [user, isLoading, rolesLoaded, navigate]);
 
   const handleSignOut = async () => {
     await signOut();
     navigate("/");
   };
 
-  if (isLoading) {
+  // Show loading until both auth and roles are confirmed
+  if (isLoading || !rolesLoaded) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>

@@ -17,19 +17,21 @@ import AdminNotifications from "@/components/admin/AdminNotifications";
 const AdminLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, isAdmin, isLoading, signOut } = useAuth();
+  const { user, isAdmin, isLoading, rolesLoaded, signOut } = useAuth();
 
   useEffect(() => {
-    if (!isLoading) {
+    // Wait until both auth and roles are loaded before redirecting
+    if (!isLoading && rolesLoaded) {
       if (!user) {
         navigate("/auth");
       } else if (!isAdmin) {
         navigate("/");
       }
     }
-  }, [user, isAdmin, isLoading, navigate]);
+  }, [user, isAdmin, isLoading, rolesLoaded, navigate]);
 
-  if (isLoading) {
+  // Show loading until both auth and roles are confirmed
+  if (isLoading || !rolesLoaded) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
