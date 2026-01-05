@@ -14,6 +14,7 @@ interface Order {
   delivery_address: string;
   delivery_city: string;
   total_amount: number;
+  delivery_fee: number | null;
   currency: string;
   status: string;
   created_at: string;
@@ -135,8 +136,8 @@ const AvailableJobs = () => {
                       {format(new Date(order.created_at), "MMM d, yyyy h:mm a")}
                     </p>
                   </div>
-                  <span className="px-2 py-1 bg-accent/20 text-accent-foreground text-xs font-medium rounded-full">
-                    {order.currency} {order.total_amount.toLocaleString()}
+                  <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+                    Delivery Fee: {order.currency} {(order.delivery_fee || 0).toLocaleString()}
                   </span>
                 </div>
               </CardHeader>

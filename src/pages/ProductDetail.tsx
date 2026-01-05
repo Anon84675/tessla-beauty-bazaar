@@ -19,9 +19,10 @@ const ProductDetail = () => {
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
 
-  // Reset selected image when product changes
+  // Reset selected image and scroll to top when product changes
   useEffect(() => {
     setSelectedImage(0);
+    window.scrollTo(0, 0);
   }, [id]);
 
   if (isLoading) {
