@@ -15,7 +15,7 @@ interface CompletedDelivery {
     customer_name: string;
     delivery_address: string;
     delivery_city: string;
-    total_amount: number;
+    delivery_fee: number | null;
     currency: string;
   };
 }
@@ -36,7 +36,7 @@ const CompletedDeliveries = () => {
           id,
           order_id,
           delivered_at,
-          order:orders(customer_name, delivery_address, delivery_city, total_amount, currency)
+          order:orders(customer_name, delivery_address, delivery_city, delivery_fee, currency)
         `)
         .eq("driver_id", user.id)
         .eq("status", "delivered")
@@ -120,7 +120,7 @@ const CompletedDeliveries = () => {
                     </div>
                   </div>
                   <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
-                    {delivery.order.currency} {delivery.order.total_amount.toLocaleString()}
+                    Delivery Fee: {delivery.order.currency} {(delivery.order.delivery_fee || 0).toLocaleString()}
                   </span>
                 </div>
               </CardContent>
