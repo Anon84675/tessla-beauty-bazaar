@@ -185,7 +185,7 @@ const ActiveDeliveries = () => {
                     </div>
                     <div className="text-right">
                       <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
-                        Delivery Fee: {delivery.order.currency} {(delivery.order.delivery_fee || 0).toLocaleString()}
+                        Commision: {delivery.order.currency} {(delivery.order.delivery_fee || 0).toLocaleString()}
                       </span>
                     </div>
                   </div>
