@@ -3,6 +3,7 @@ import { X, Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
+import OrderTracker from "@/components/cart/OrderTracker";
 
 const CartSidebar = () => {
   const { state, closeCart, removeItem, updateQuantity, totalPrice, totalItems } = useCart();
@@ -121,6 +122,9 @@ const CartSidebar = () => {
                 </div>
               )}
             </div>
+
+            {/* Order Tracker - always visible */}
+            <OrderTracker />
 
             {/* Footer */}
             {state.items.length > 0 && (

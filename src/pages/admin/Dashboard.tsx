@@ -150,151 +150,199 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="p-8">
-      <h1 className="text-2xl font-serif font-bold mb-6">Dashboard</h1>
+    <div className="p-4 md:p-8 space-y-6">
+      <h1 className="text-2xl font-serif font-bold">Dashboard</h1>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Products
-            </CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalProducts}</div>
+      {/* Compact stat cards in a row */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Products</p>
+                <p className="text-2xl font-bold">{stats.totalProducts}</p>
+              </div>
+              <Package className="h-8 w-8 text-primary/60" />
+            </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Orders
-            </CardTitle>
-            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalOrders}</div>
+        <Card className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 border-blue-500/20">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Orders</p>
+                <p className="text-2xl font-bold">{stats.totalOrders}</p>
+              </div>
+              <ShoppingCart className="h-8 w-8 text-blue-500/60" />
+            </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Pending Orders
-            </CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary">{stats.pendingOrders}</div>
+        <Card className="bg-gradient-to-br from-amber-500/10 to-amber-500/5 border-amber-500/20">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Pending</p>
+                <p className="text-2xl font-bold">{stats.pendingOrders}</p>
+              </div>
+              <Users className="h-8 w-8 text-amber-500/60" />
+            </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Revenue
-            </CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatPrice(stats.totalRevenue)}</div>
+        <Card className="bg-gradient-to-br from-green-500/10 to-green-500/5 border-green-500/20">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Revenue</p>
+                <p className="text-lg font-bold">{formatPrice(stats.totalRevenue)}</p>
+              </div>
+              <TrendingUp className="h-8 w-8 text-green-500/60" />
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2 mb-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Orders (Last 14 Days)</CardTitle>
+      {/* Charts - full width on mobile, side by side on desktop */}
+      <div className="grid gap-6 xl:grid-cols-3">
+        {/* Line chart - takes 2/3 on xl screens */}
+        <Card className="xl:col-span-2">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Orders Trend (14 Days)</CardTitle>
           </CardHeader>
-          <CardContent className="h-72">
+          <CardContent className="h-80">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={dailyMetrics} margin={{ left: 8, right: 8, top: 8, bottom: 8 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="day" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
-                <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} allowDecimals={false} />
+              <LineChart data={dailyMetrics} margin={{ left: 0, right: 16, top: 8, bottom: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                <XAxis 
+                  dataKey="day" 
+                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} 
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis 
+                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} 
+                  allowDecimals={false}
+                  axisLine={false}
+                  tickLine={false}
+                  width={30}
+                />
                 <Tooltip
                   contentStyle={{
                     background: "hsl(var(--card))",
                     border: "1px solid hsl(var(--border))",
-                    borderRadius: 12,
+                    borderRadius: 8,
+                    fontSize: 12,
                   }}
-                  labelStyle={{ color: "hsl(var(--foreground))" }}
+                  labelStyle={{ color: "hsl(var(--foreground))", fontWeight: 600 }}
                 />
                 <Line
                   type="monotone"
                   dataKey="orders"
                   stroke="hsl(var(--primary))"
-                  strokeWidth={2}
+                  strokeWidth={2.5}
                   dot={false}
+                  activeDot={{ r: 4, fill: "hsl(var(--primary))" }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="revenue"
+                  stroke="hsl(var(--accent))"
+                  strokeWidth={2}
+                  strokeDasharray="4 4"
+                  dot={false}
+                  name="Revenue (KSh)"
                 />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
+        {/* Pie chart - takes 1/3 on xl screens */}
         <Card>
-          <CardHeader>
-            <CardTitle>Order Status Breakdown</CardTitle>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Status Breakdown</CardTitle>
           </CardHeader>
-          <CardContent className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Tooltip
-                  contentStyle={{
-                    background: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: 12,
-                  }}
-                  labelStyle={{ color: "hsl(var(--foreground))" }}
-                />
-                <Pie
-                  data={statusBreakdown}
-                  dataKey="value"
-                  nameKey="name"
-                  innerRadius={60}
-                  outerRadius={90}
-                  paddingAngle={3}
-                >
-                  {statusBreakdown.map((s) => (
-                    <Cell
-                      key={s.name}
-                      fill={STATUS_COLORS[s.name] || "hsl(var(--muted-foreground))"}
-                    />
-                  ))}
-                </Pie>
-              </PieChart>
-            </ResponsiveContainer>
+          <CardContent className="h-80 flex flex-col">
+            <div className="flex-1">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Tooltip
+                    contentStyle={{
+                      background: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: 8,
+                      fontSize: 12,
+                    }}
+                  />
+                  <Pie
+                    data={statusBreakdown}
+                    dataKey="value"
+                    nameKey="name"
+                    innerRadius="55%"
+                    outerRadius="85%"
+                    paddingAngle={2}
+                  >
+                    {statusBreakdown.map((s) => (
+                      <Cell
+                        key={s.name}
+                        fill={STATUS_COLORS[s.name] || "hsl(var(--muted-foreground))"}
+                      />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            {/* Legend */}
+            <div className="flex flex-wrap justify-center gap-3 mt-2">
+              {statusBreakdown.map((s) => (
+                <div key={s.name} className="flex items-center gap-1.5">
+                  <span
+                    className="w-2.5 h-2.5 rounded-full"
+                    style={{ backgroundColor: STATUS_COLORS[s.name] || "hsl(var(--muted-foreground))" }}
+                  />
+                  <span className="text-xs capitalize text-muted-foreground">{s.name}</span>
+                  <span className="text-xs font-medium">({s.value})</span>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
       </div>
 
+      {/* Recent orders - compact table */}
       <Card>
-        <CardHeader>
-          <CardTitle>Recent Orders</CardTitle>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Recent Orders</CardTitle>
         </CardHeader>
         <CardContent>
           {recentOrders.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">No orders yet</p>
+            <p className="text-muted-foreground text-center py-6 text-sm">No orders yet</p>
           ) : (
-            <div className="space-y-4">
+            <div className="divide-y divide-border">
               {recentOrders.map((order) => (
-                <div key={order.id} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-                    <div>
-                      <p className="font-medium">{order.customer_name}</p>
-                      <p className="text-sm text-muted-foreground">{formatDate(order.created_at)}</p>
+                <div key={order.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
+                  <div className="flex items-center gap-3">
+                    <div className="h-9 w-9 rounded-full bg-secondary flex items-center justify-center">
+                      <ShoppingCart className="h-4 w-4 text-muted-foreground" />
                     </div>
-                  <div className="text-right">
-                    <p className="font-medium">{formatPrice(order.total_amount)}</p>
-                    <span className={`text-xs px-2 py-1 rounded-full ${
-                      order.status === "delivered" ? "bg-green-100 text-green-700" :
-                      order.status === "pending" ? "bg-amber-100 text-amber-700" :
-                      order.status === "paid" ? "bg-blue-100 text-blue-700" :
+                    <div>
+                      <p className="font-medium text-sm">{order.customer_name}</p>
+                      <p className="text-xs text-muted-foreground">{formatDate(order.created_at)}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                      order.status === "delivered" ? "bg-green-500/10 text-green-600" :
+                      order.status === "pending" ? "bg-amber-500/10 text-amber-600" :
+                      order.status === "paid" ? "bg-blue-500/10 text-blue-600" :
+                      order.status === "dispatched" ? "bg-purple-500/10 text-purple-600" :
                       "bg-muted text-muted-foreground"
                     }`}>
                       {order.status}
                     </span>
+                    <p className="font-semibold text-sm w-24 text-right">{formatPrice(order.total_amount)}</p>
                   </div>
                 </div>
               ))}
