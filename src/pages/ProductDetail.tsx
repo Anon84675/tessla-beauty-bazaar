@@ -13,7 +13,7 @@ import ProductReviews from "@/components/products/ProductReviews";
 
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const { product, isLoading } = useProductById(id || "");
+  const { product, isLoading, refetch } = useProductById(id || "");
   const { products: allProducts } = useProducts();
   const { addItem } = useCart();
   const [quantity, setQuantity] = useState(1);
@@ -155,7 +155,7 @@ const ProductDetail = () => {
                     <Star
                       key={i}
                       className={`h-5 w-5 ${
-                        i < Math.floor(product.rating)
+                        i < Math.round(product.rating)
                           ? "text-accent fill-accent"
                           : "text-muted-foreground"
                       }`}
@@ -163,7 +163,7 @@ const ProductDetail = () => {
                   ))}
                 </div>
                 <span className="text-sm text-muted-foreground">
-                  {product.rating} ({product.reviewCount} reviews)
+                  {Number(product.rating).toFixed(1)} ({product.reviewCount} review{product.reviewCount === 1 ? "" : "s"})
                 </span>
               </div>
 
@@ -279,7 +279,7 @@ const ProductDetail = () => {
         {/* Related Products */}
         {/* Product Reviews */}
         <div className="container">
-          <ProductReviews productId={product.id} />
+          <ProductReviews productId={product.id} onReviewAdded={() => refetch()} />
         </div>
 
         {relatedProducts.length > 0 && (

@@ -102,7 +102,7 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
               <Star
                 key={i}
                 className={`h-4 w-4 ${
-                  i < Math.floor(product.rating)
+                  i < Math.round(product.rating)
                     ? "text-accent fill-accent"
                     : "text-muted-foreground"
                 }`}

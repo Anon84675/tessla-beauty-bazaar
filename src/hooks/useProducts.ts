@@ -130,19 +130,20 @@ export const useProductById = (id: string) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchProduct = async () => {
-      const { data } = await supabase
-        .from("products")
-        .select("*")
-        .eq("id", id)
-        .single();
-      if (data) {
-        setProduct(mapDbToProduct(data));
-      }
-      setIsLoading(false);
-    };
     if (id) fetchProduct();
   }, [id]);
 
-  return { product, isLoading };
+  const fetchProduct = async () => {
+    const { data } = await supabase
+      .from("products")
+      .select("*")
+      .eq("id", id)
+      .single();
+    if (data) {
+      setProduct(mapDbToProduct(data));
+    }
+    setIsLoading(false);
+  };
+
+  return { product, isLoading, refetch: fetchProduct };
 };
