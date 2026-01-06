@@ -188,7 +188,7 @@ const ProductReviews = ({ productId, onReviewAdded }: ProductReviewsProps) => {
                       key={i}
                       className={`h-3.5 w-3.5 ${
                         i < Math.round(averageRating)
-                          ? "text-amber-500 fill-amber-500"
+                          ? "text-accent fill-accent"
                           : "text-muted-foreground/30"
                       }`}
                     />
@@ -260,8 +260,8 @@ const ProductReviews = ({ productId, onReviewAdded }: ProductReviewsProps) => {
                         <Star
                           className={`h-5 w-5 transition-colors ${
                             star <= formData.rating
-                              ? "text-amber-500 fill-amber-500"
-                              : "text-muted-foreground/30 hover:text-amber-400"
+                              ? "text-accent fill-accent"
+                              : "text-muted-foreground/30 hover:text-accent/80"
                           }`}
                         />
                       </button>
@@ -318,7 +318,7 @@ const ProductReviews = ({ productId, onReviewAdded }: ProductReviewsProps) => {
                             key={i}
                             className={`h-3 w-3 ${
                               i < review.rating
-                                ? "text-amber-500 fill-amber-500"
+                                ? "text-accent fill-accent"
                                 : "text-muted-foreground/30"
                             }`}
                           />

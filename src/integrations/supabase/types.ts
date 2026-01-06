@@ -396,6 +396,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      recompute_product_rating: {
+        Args: { p_product_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "user" | "driver"
