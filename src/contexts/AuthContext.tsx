@@ -44,62 +44,82 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     let mounted = true;
+    let roleFetchToken = 0;
 
-    const initAuth = async () => {
+    const applySession = (nextSession: Session | null) => {
+      if (!mounted) return;
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
+    };
+
+    const fetchAndApplyRoles = async (userId: string) => {
+      const currentToken = ++roleFetchToken;
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!mounted) return;
-        
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          const roles = await checkUserRoles(session.user.id);
-          if (mounted) {
-            setIsAdmin(roles.admin);
-            setIsDriver(roles.driver);
-            setRolesLoaded(true);
-          }
-        } else {
-          if (mounted) {
-            setRolesLoaded(true);
-          }
-        }
-      } catch (error) {
-        console.error("Auth initialization error:", error);
+        const roles = await checkUserRoles(userId);
+        if (!mounted || currentToken !== roleFetchToken) return;
+        setIsAdmin(roles.admin);
+        setIsDriver(roles.driver);
+      } catch {
+        if (!mounted || currentToken !== roleFetchToken) return;
+        setIsAdmin(false);
+        setIsDriver(false);
       } finally {
-        if (mounted) {
-          setIsLoading(false);
-        }
+        if (mounted && currentToken === roleFetchToken) setRolesLoaded(true);
       }
     };
 
-    initAuth();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    // 1) Subscribe first (callback MUST be sync)
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (!mounted) return;
-      
-      // Set loading state for role changes
+
+      // reset role state immediately on any auth change
       setRolesLoaded(false);
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        const roles = await checkUserRoles(session.user.id);
-        if (mounted) {
-          setIsAdmin(roles.admin);
-          setIsDriver(roles.driver);
+      applySession(nextSession);
+
+      if (nextSession?.user) {
+        // Defer role lookup to avoid calling supabase inside the auth callback
+        setTimeout(() => {
+          fetchAndApplyRoles(nextSession.user.id);
+        }, 0);
+      } else {
+        // Signed out
+        setIsAdmin(false);
+        setIsDriver(false);
+        setRolesLoaded(true);
+      }
+    });
+
+    // 2) Then get the current session
+    (async () => {
+      try {
+        const {
+          data: { session: currentSession },
+        } = await supabase.auth.getSession();
+
+        if (!mounted) return;
+
+        applySession(currentSession);
+
+        if (currentSession?.user) {
+          await fetchAndApplyRoles(currentSession.user.id);
+        } else {
+          setIsAdmin(false);
+          setIsDriver(false);
           setRolesLoaded(true);
         }
-      } else {
+      } catch (error) {
+        console.error("Auth initialization error:", error);
         if (mounted) {
           setIsAdmin(false);
           setIsDriver(false);
           setRolesLoaded(true);
         }
+      } finally {
+        if (mounted) setIsLoading(false);
       }
-    });
+    })();
 
     return () => {
       mounted = false;
@@ -126,11 +146,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    setSession(null);
-    setIsAdmin(false);
-    setIsDriver(false);
+    try {
+      await supabase.auth.signOut();
+    } finally {
+      setUser(null);
+      setSession(null);
+      setIsAdmin(false);
+      setIsDriver(false);
+      setRolesLoaded(true);
+    }
   };
 
   return (
