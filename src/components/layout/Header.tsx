@@ -20,13 +20,16 @@ const Header = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const { openCart, totalItems } = useCart();
-  const { user, isAdmin, isDriver, signOut } = useAuth();
+  const { user, isAdmin, isDriver, rolesLoaded, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
-    await signOut();
-    navigate("/");
+    try {
+      await signOut();
+    } finally {
+      navigate("/");
+    }
   };
 
   const navLinks = [
@@ -187,12 +190,16 @@ const Header = () => {
                 <DropdownMenuContent align="end" className="w-48">
                   <div className="px-2 py-1.5">
                     <p className="text-sm font-medium truncate">{user.email}</p>
-                    {isAdmin && (
+                    {!rolesLoaded ? (
+                      <p className="text-xs text-muted-foreground">Loading access…</p>
+                    ) : isAdmin ? (
                       <p className="text-xs text-muted-foreground">Admin</p>
-                    )}
+                    ) : isDriver ? (
+                      <p className="text-xs text-muted-foreground">Driver</p>
+                    ) : null}
                   </div>
                   <DropdownMenuSeparator />
-                  {isAdmin && (
+                  {rolesLoaded && isAdmin && (
                     <DropdownMenuItem asChild>
                       <Link to="/admin" className="flex items-center gap-2 cursor-pointer">
                         <Settings className="h-4 w-4" />
@@ -200,7 +207,7 @@ const Header = () => {
                       </Link>
                     </DropdownMenuItem>
                   )}
-                  {isDriver && (
+                  {rolesLoaded && isDriver && (
                     <DropdownMenuItem asChild>
                       <Link to="/driver" className="flex items-center gap-2 cursor-pointer">
                         <Truck className="h-4 w-4" />
