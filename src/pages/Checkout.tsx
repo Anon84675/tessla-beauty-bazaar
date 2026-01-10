@@ -14,7 +14,8 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { toast } from "sonner";
 import { z } from "zod";
-import { ArrowLeft, CreditCard, Truck } from "lucide-react";
+import { ArrowLeft, Truck, Smartphone, Loader2, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
+import { useMpesaPayment, MpesaStatus } from "@/hooks/useMpesaPayment";
 
 const checkoutSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(100),
@@ -30,7 +31,8 @@ const Checkout = () => {
   const { state, totalPrice, clearCart } = useCart();
   const { user, isLoading } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<"pay_on_delivery" | "paypal">("pay_on_delivery");
+  const [paymentMethod, setPaymentMethod] = useState<"pay_on_delivery" | "mpesa">("mpesa");
+  const [createdOrderId, setCreatedOrderId] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
     name: "",
@@ -41,16 +43,28 @@ const Checkout = () => {
     notes: "",
   });
 
+  // M-Pesa payment hook
+  const mpesa = useMpesaPayment({
+    onSuccess: () => {
+      toast.success("Payment successful! Your order has been confirmed.");
+      clearCart();
+      navigate("/");
+    },
+    onError: (message) => {
+      toast.error(message);
+    },
+  });
+
   // Calculate delivery cost - simple flat rate tiers
   const calculateDeliveryCost = () => {
     if (totalPrice >= 20000) {
-      return 0; // Free delivery for orders 20k+
+      return 0;
     } else if (totalPrice >= 10000) {
-      return 500; // KSh 500 for 10k-20k
+      return 500;
     } else if (totalPrice >= 5000) {
-      return 350; // KSh 350 for 5k-10k
+      return 350;
     } else {
-      return 250; // KSh 250 for orders under 5k
+      return 250;
     }
   };
 
@@ -66,10 +80,10 @@ const Checkout = () => {
   }, [user, isLoading, navigate]);
 
   useEffect(() => {
-    if (state.items.length === 0 && !isLoading) {
+    if (state.items.length === 0 && !isLoading && !mpesa.isProcessing && mpesa.status !== "success") {
       navigate("/shop");
     }
-  }, [state.items, isLoading, navigate]);
+  }, [state.items, isLoading, navigate, mpesa.isProcessing, mpesa.status]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -81,6 +95,48 @@ const Checkout = () => {
       currency: "KES",
       minimumFractionDigits: 0,
     }).format(price);
+  };
+
+  const createOrder = async () => {
+    if (!user) return null;
+
+    const { data: order, error: orderError } = await supabase
+      .from("orders")
+      .insert({
+        user_id: user.id,
+        total_amount: orderTotal,
+        delivery_fee: deliveryCost,
+        customer_name: formData.name,
+        customer_email: formData.email,
+        customer_phone: formData.phone,
+        delivery_address: formData.address,
+        delivery_city: formData.city,
+        payment_method: paymentMethod,
+        notes: formData.notes || null,
+        status: "pending",
+      })
+      .select()
+      .single();
+
+    if (orderError) throw orderError;
+
+    // Create order items
+    const orderItems = state.items.map(item => ({
+      order_id: order.id,
+      product_id: item.product.id,
+      product_name: item.product.name,
+      quantity: item.quantity,
+      unit_price: item.product.price,
+      total_price: item.product.price * item.quantity,
+    }));
+
+    const { error: itemsError } = await supabase
+      .from("order_items")
+      .insert(orderItems);
+
+    if (itemsError) throw itemsError;
+
+    return order;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -104,46 +160,27 @@ const Checkout = () => {
     setIsSubmitting(true);
 
     try {
-      // Create order
-      const { data: order, error: orderError } = await supabase
-        .from("orders")
-        .insert({
-          user_id: user.id,
-          total_amount: orderTotal,
-          delivery_fee: deliveryCost,
-          customer_name: formData.name,
-          customer_email: formData.email,
-          customer_phone: formData.phone,
-          delivery_address: formData.address,
-          delivery_city: formData.city,
-          payment_method: paymentMethod,
-          notes: formData.notes || null,
-          status: "pending",
-        })
-        .select()
-        .single();
+      // Create order first
+      const order = await createOrder();
+      if (!order) {
+        throw new Error("Failed to create order");
+      }
 
-      if (orderError) throw orderError;
+      setCreatedOrderId(order.id);
 
-      // Create order items
-      const orderItems = state.items.map(item => ({
-        order_id: order.id,
-        product_id: item.product.id,
-        product_name: item.product.name,
-        quantity: item.quantity,
-        unit_price: item.product.price,
-        total_price: item.product.price * item.quantity,
-      }));
-
-      const { error: itemsError } = await supabase
-        .from("order_items")
-        .insert(orderItems);
-
-      if (itemsError) throw itemsError;
-
-      clearCart();
-      toast.success("Order placed successfully! We’ll contact you to confirm delivery.");
-      navigate("/");
+      if (paymentMethod === "mpesa") {
+        // Initiate M-Pesa STK push
+        const success = await mpesa.initiateStkPush(formData.phone, orderTotal, order.id);
+        if (!success) {
+          // STK push failed, but order is created
+          toast.error("Failed to initiate M-Pesa payment. Please try again or choose Pay on Delivery.");
+        }
+      } else {
+        // Pay on delivery
+        clearCart();
+        toast.success("Order placed successfully! We'll contact you to confirm delivery.");
+        navigate("/");
+      }
     } catch (error: any) {
       toast.error(error.message || "Failed to place order");
     } finally {
@@ -151,11 +188,137 @@ const Checkout = () => {
     }
   };
 
+  const handleRetryPayment = async () => {
+    if (!createdOrderId) return;
+    
+    mpesa.reset();
+    const success = await mpesa.initiateStkPush(formData.phone, orderTotal, createdOrderId);
+    if (!success) {
+      toast.error("Failed to initiate M-Pesa payment");
+    }
+  };
 
-  if (isLoading || state.items.length === 0) {
+  const handleCancelAndPayOnDelivery = async () => {
+    if (!createdOrderId) return;
+
+    try {
+      await supabase
+        .from("orders")
+        .update({ payment_method: "pay_on_delivery", notes: "Customer switched to pay on delivery after M-Pesa attempt" })
+        .eq("id", createdOrderId);
+      
+      clearCart();
+      toast.success("Order confirmed with Pay on Delivery!");
+      navigate("/");
+    } catch (error) {
+      toast.error("Failed to update order");
+    }
+  };
+
+  // Get status icon and color
+  const getStatusDisplay = (status: MpesaStatus) => {
+    switch (status) {
+      case "initiating":
+        return { icon: <Loader2 className="w-6 h-6 animate-spin" />, color: "text-primary", bg: "bg-primary/10" };
+      case "waiting_for_pin":
+        return { icon: <Smartphone className="w-6 h-6 animate-pulse" />, color: "text-amber-600", bg: "bg-amber-50" };
+      case "processing":
+        return { icon: <Loader2 className="w-6 h-6 animate-spin" />, color: "text-primary", bg: "bg-primary/10" };
+      case "success":
+        return { icon: <CheckCircle2 className="w-6 h-6" />, color: "text-green-600", bg: "bg-green-50" };
+      case "failed":
+      case "cancelled":
+      case "timeout":
+      case "error":
+        return { icon: <XCircle className="w-6 h-6" />, color: "text-red-600", bg: "bg-red-50" };
+      default:
+        return { icon: <AlertCircle className="w-6 h-6" />, color: "text-muted-foreground", bg: "bg-muted" };
+    }
+  };
+
+  if (isLoading || (state.items.length === 0 && !mpesa.isProcessing && mpesa.status !== "success")) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // Show M-Pesa payment status screen when processing
+  if (mpesa.isProcessing || ["success", "failed", "cancelled", "timeout", "error"].includes(mpesa.status)) {
+    const statusDisplay = getStatusDisplay(mpesa.status);
+    const isTerminal = ["success", "failed", "cancelled", "timeout", "error"].includes(mpesa.status);
+    const canRetry = ["failed", "cancelled", "timeout", "error"].includes(mpesa.status);
+
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Header />
+        <main className="flex-1 container mx-auto px-4 py-8 flex items-center justify-center">
+          <Card className="w-full max-w-md">
+            <CardContent className="pt-8 pb-6">
+              <div className="text-center space-y-6">
+                {/* Status Icon */}
+                <div className={`mx-auto w-20 h-20 rounded-full flex items-center justify-center ${statusDisplay.bg}`}>
+                  <div className={statusDisplay.color}>
+                    {statusDisplay.icon}
+                  </div>
+                </div>
+
+                {/* Status Title */}
+                <div>
+                  <h2 className="text-xl font-semibold mb-2">
+                    {mpesa.status === "waiting_for_pin" && "Check Your Phone"}
+                    {mpesa.status === "processing" && "Processing Payment"}
+                    {mpesa.status === "initiating" && "Connecting to M-Pesa"}
+                    {mpesa.status === "success" && "Payment Successful!"}
+                    {mpesa.status === "failed" && "Payment Failed"}
+                    {mpesa.status === "cancelled" && "Payment Cancelled"}
+                    {mpesa.status === "timeout" && "Payment Timed Out"}
+                    {mpesa.status === "error" && "Payment Error"}
+                  </h2>
+                  <p className="text-muted-foreground">{mpesa.message}</p>
+                </div>
+
+                {/* Amount */}
+                <div className="py-4 border-y">
+                  <p className="text-sm text-muted-foreground">Amount</p>
+                  <p className="text-2xl font-bold">{formatPrice(orderTotal)}</p>
+                </div>
+
+                {/* Actions */}
+                {canRetry && (
+                  <div className="space-y-3">
+                    <Button onClick={handleRetryPayment} className="w-full" size="lg">
+                      <Smartphone className="w-4 h-4 mr-2" />
+                      Try M-Pesa Again
+                    </Button>
+                    <Button 
+                      onClick={handleCancelAndPayOnDelivery} 
+                      variant="outline" 
+                      className="w-full"
+                    >
+                      <Truck className="w-4 h-4 mr-2" />
+                      Pay on Delivery Instead
+                    </Button>
+                  </div>
+                )}
+
+                {mpesa.status === "success" && (
+                  <Button onClick={() => navigate("/")} className="w-full" size="lg">
+                    Continue Shopping
+                  </Button>
+                )}
+
+                {!isTerminal && (
+                  <p className="text-xs text-muted-foreground">
+                    Do not close this page. We're verifying your payment...
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </main>
+        <Footer />
       </div>
     );
   }
@@ -210,7 +373,7 @@ const Checkout = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number</Label>
+                    <Label htmlFor="phone">Phone Number (M-Pesa)</Label>
                     <Input
                       id="phone"
                       name="phone"
@@ -220,6 +383,9 @@ const Checkout = () => {
                       onChange={handleChange}
                       required
                     />
+                    <p className="text-xs text-muted-foreground">
+                      Enter your M-Pesa registered number for payment
+                    </p>
                   </div>
 
                   <div className="space-y-2">
@@ -262,25 +428,47 @@ const Checkout = () => {
                   <div className="space-y-4">
                     <Label>Payment Method</Label>
                     <RadioGroup value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as any)}>
-                      <div className="flex items-center space-x-3 p-4 border rounded-lg cursor-pointer hover:bg-muted/50">
-                        <RadioGroupItem value="pay_on_delivery" id="pay_on_delivery" />
-                        <Label htmlFor="pay_on_delivery" className="flex items-center gap-2 cursor-pointer flex-1">
-                          <Truck className="w-5 h-5 text-primary" />
-                          Pay on Delivery
+                      <div className={`flex items-center space-x-3 p-4 border rounded-lg cursor-pointer transition-colors ${paymentMethod === 'mpesa' ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'}`}>
+                        <RadioGroupItem value="mpesa" id="mpesa" />
+                        <Label htmlFor="mpesa" className="flex items-center gap-3 cursor-pointer flex-1">
+                          <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center">
+                            <Smartphone className="w-5 h-5 text-white" />
+                          </div>
+                          <div>
+                            <p className="font-medium">M-Pesa</p>
+                            <p className="text-xs text-muted-foreground">Pay instantly via STK push</p>
+                          </div>
                         </Label>
                       </div>
-                      <div className="flex items-center space-x-3 p-4 border rounded-lg cursor-pointer hover:bg-muted/50">
-                        <RadioGroupItem value="paypal" id="paypal" />
-                        <Label htmlFor="paypal" className="flex items-center gap-2 cursor-pointer flex-1">
-                          <CreditCard className="w-5 h-5 text-primary" />
-                          PayPal (coming soon)
+                      <div className={`flex items-center space-x-3 p-4 border rounded-lg cursor-pointer transition-colors ${paymentMethod === 'pay_on_delivery' ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'}`}>
+                        <RadioGroupItem value="pay_on_delivery" id="pay_on_delivery" />
+                        <Label htmlFor="pay_on_delivery" className="flex items-center gap-3 cursor-pointer flex-1">
+                          <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center">
+                            <Truck className="w-5 h-5 text-muted-foreground" />
+                          </div>
+                          <div>
+                            <p className="font-medium">Pay on Delivery</p>
+                            <p className="text-xs text-muted-foreground">Cash or M-Pesa on arrival</p>
+                          </div>
                         </Label>
                       </div>
                     </RadioGroup>
                   </div>
 
                   <Button type="submit" className="w-full mt-6" size="lg" disabled={isSubmitting}>
-                    {isSubmitting ? "Processing..." : `Place Order - ${formatPrice(orderTotal)}`}
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Processing...
+                      </>
+                    ) : paymentMethod === "mpesa" ? (
+                      <>
+                        <Smartphone className="w-4 h-4 mr-2" />
+                        Pay with M-Pesa - {formatPrice(orderTotal)}
+                      </>
+                    ) : (
+                      `Place Order - ${formatPrice(orderTotal)}`
+                    )}
                   </Button>
                 </form>
               </CardContent>
@@ -342,7 +530,6 @@ const Checkout = () => {
           </div>
         </div>
       </main>
-
 
       <Footer />
     </div>
