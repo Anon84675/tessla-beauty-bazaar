@@ -12,9 +12,12 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const requestId = crypto.randomUUID().slice(0, 8);
+  console.log(`[CALLBACK][${requestId}] M-Pesa callback received`);
+
   try {
     const body = await req.json();
-    console.log("M-Pesa callback received:", JSON.stringify(body, null, 2));
+    console.log(`[CALLBACK][${requestId}] Raw body:`, JSON.stringify(body, null, 2));
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -25,7 +28,8 @@ serve(async (req) => {
     const stkCallback = body.Body?.stkCallback;
     
     if (!stkCallback) {
-      console.error("Invalid callback structure");
+      console.error(`[CALLBACK][${requestId}] Invalid callback structure - no stkCallback`);
+      // Always return success to M-Pesa to prevent retries
       return new Response(JSON.stringify({ ResultCode: 0, ResultDesc: "Accepted" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -39,22 +43,28 @@ serve(async (req) => {
       CallbackMetadata,
     } = stkCallback;
 
-    console.log(`Callback for CheckoutRequestID: ${CheckoutRequestID}`);
-    console.log(`ResultCode: ${ResultCode}, ResultDesc: ${ResultDesc}`);
+    console.log(`[CALLBACK][${requestId}] CheckoutRequestID: ${CheckoutRequestID}`);
+    console.log(`[CALLBACK][${requestId}] ResultCode: ${ResultCode}`);
+    console.log(`[CALLBACK][${requestId}] ResultDesc: ${ResultDesc}`);
 
     // Find the order by checkout request ID
     const { data: order, error: findError } = await supabase
       .from("orders")
-      .select("id, customer_name, total_amount")
+      .select("id, customer_name, total_amount, customer_phone")
       .eq("payment_reference", CheckoutRequestID)
       .single();
 
     if (findError || !order) {
-      console.error("Order not found for CheckoutRequestID:", CheckoutRequestID);
+      console.error(`[CALLBACK][${requestId}] Order not found for CheckoutRequestID: ${CheckoutRequestID}`);
+      console.error(`[CALLBACK][${requestId}] Find error:`, findError);
+      
+      // Log for debugging but still return success to M-Pesa
       return new Response(JSON.stringify({ ResultCode: 0, ResultDesc: "Accepted" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    console.log(`[CALLBACK][${requestId}] Found order: ${order.id}`);
 
     if (ResultCode === 0) {
       // Payment successful
@@ -68,22 +78,25 @@ serve(async (req) => {
         for (const item of CallbackMetadata.Item) {
           switch (item.Name) {
             case "MpesaReceiptNumber":
-              mpesaReceiptNumber = item.Value;
+              mpesaReceiptNumber = item.Value || "";
               break;
             case "TransactionDate":
-              transactionDate = item.Value?.toString() || "";
+              transactionDate = String(item.Value || "");
               break;
             case "PhoneNumber":
-              phoneNumber = item.Value?.toString() || "";
+              phoneNumber = String(item.Value || "");
               break;
             case "Amount":
-              amount = item.Value || 0;
+              amount = Number(item.Value) || 0;
               break;
           }
         }
       }
 
-      console.log(`Payment successful! Receipt: ${mpesaReceiptNumber}, Amount: ${amount}`);
+      console.log(`[CALLBACK][${requestId}] Payment SUCCESS!`);
+      console.log(`[CALLBACK][${requestId}] Receipt: ${mpesaReceiptNumber}`);
+      console.log(`[CALLBACK][${requestId}] Amount: ${amount}`);
+      console.log(`[CALLBACK][${requestId}] Phone: ***${phoneNumber.slice(-4)}`);
 
       // Update order status to paid
       const { error: updateError } = await supabase
@@ -91,41 +104,54 @@ serve(async (req) => {
         .update({
           status: "paid",
           payment_reference: mpesaReceiptNumber || CheckoutRequestID,
-          notes: `M-Pesa payment confirmed. Receipt: ${mpesaReceiptNumber}. Phone: ${phoneNumber}. Date: ${transactionDate}`,
+          notes: `M-Pesa payment confirmed. Receipt: ${mpesaReceiptNumber}. Amount: KSh ${amount}. Date: ${transactionDate}`,
         })
         .eq("id", order.id);
 
       if (updateError) {
-        console.error("Failed to update order:", updateError);
+        console.error(`[CALLBACK][${requestId}] Failed to update order:`, updateError);
+      } else {
+        console.log(`[CALLBACK][${requestId}] Order ${order.id} marked as PAID`);
       }
 
       // Create admin notification for new paid order
-      await supabase.from("admin_notifications").insert({
+      const { error: notifError } = await supabase.from("admin_notifications").insert({
         type: "new_order",
-        title: "New Order Paid",
-        message: `Order from ${order.customer_name} for KSh ${order.total_amount.toLocaleString()} has been paid via M-Pesa. Receipt: ${mpesaReceiptNumber}`,
+        title: "New Order Paid via M-Pesa",
+        message: `Order from ${order.customer_name} for KSh ${order.total_amount.toLocaleString()} paid via M-Pesa. Receipt: ${mpesaReceiptNumber}`,
         order_id: order.id,
       });
 
-      console.log("Order updated successfully");
+      if (notifError) {
+        console.error(`[CALLBACK][${requestId}] Failed to create notification:`, notifError);
+      }
+
     } else {
       // Payment failed or cancelled
-      console.log(`Payment failed/cancelled: ${ResultDesc}`);
+      console.log(`[CALLBACK][${requestId}] Payment FAILED/CANCELLED`);
+      console.log(`[CALLBACK][${requestId}] ResultCode: ${ResultCode}, Desc: ${ResultDesc}`);
       
-      await supabase
+      // Update order notes with failure reason
+      const { error: updateError } = await supabase
         .from("orders")
         .update({
-          notes: `M-Pesa payment failed: ${ResultDesc}`,
+          notes: `M-Pesa payment failed: ${ResultDesc} (Code: ${ResultCode})`,
         })
         .eq("id", order.id);
+
+      if (updateError) {
+        console.error(`[CALLBACK][${requestId}] Failed to update order with failure:`, updateError);
+      }
     }
 
-    // Always return success to M-Pesa
+    // Always return success to M-Pesa to prevent retries
+    console.log(`[CALLBACK][${requestId}] Returning success to M-Pesa`);
     return new Response(JSON.stringify({ ResultCode: 0, ResultDesc: "Accepted" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+
   } catch (error) {
-    console.error("Error processing callback:", error);
+    console.error(`[CALLBACK][${requestId}] Error processing callback:`, error);
     // Return success anyway to prevent M-Pesa retries
     return new Response(JSON.stringify({ ResultCode: 0, ResultDesc: "Accepted" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

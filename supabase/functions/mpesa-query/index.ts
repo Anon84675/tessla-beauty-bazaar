@@ -1,25 +1,28 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Test credentials - replace with actual Daraja API credentials
-const MPESA_CONSUMER_KEY = Deno.env.get("MPESA_CONSUMER_KEY") || "YOUR_CONSUMER_KEY";
-const MPESA_CONSUMER_SECRET = Deno.env.get("MPESA_CONSUMER_SECRET") || "YOUR_CONSUMER_SECRET";
-const MPESA_PASSKEY = Deno.env.get("MPESA_PASSKEY") || "YOUR_PASSKEY";
+// M-Pesa configuration
+const MPESA_CONSUMER_KEY = Deno.env.get("MPESA_CONSUMER_KEY") || "";
+const MPESA_CONSUMER_SECRET = Deno.env.get("MPESA_CONSUMER_SECRET") || "";
+const MPESA_PASSKEY = Deno.env.get("MPESA_PASSKEY") || "";
 const MPESA_SHORTCODE = Deno.env.get("MPESA_SHORTCODE") || "174379";
 const MPESA_ENV = Deno.env.get("MPESA_ENV") || "sandbox";
 
-const getBaseUrl = () => {
+const getBaseUrl = (): string => {
   return MPESA_ENV === "production"
     ? "https://api.safaricom.co.ke"
     : "https://sandbox.safaricom.co.ke";
 };
 
 const getAccessToken = async (): Promise<string> => {
+  if (!MPESA_CONSUMER_KEY || !MPESA_CONSUMER_SECRET) {
+    throw new Error("M-Pesa credentials not configured");
+  }
+  
   const auth = btoa(`${MPESA_CONSUMER_KEY}:${MPESA_CONSUMER_SECRET}`);
   
   const response = await fetch(
@@ -33,6 +36,8 @@ const getAccessToken = async (): Promise<string> => {
   );
 
   if (!response.ok) {
+    const errorText = await response.text();
+    console.error("[QUERY] Failed to get access token:", response.status, errorText);
     throw new Error("Failed to get M-Pesa access token");
   }
 
@@ -57,17 +62,24 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const requestId = crypto.randomUUID().slice(0, 8);
+  console.log(`[QUERY][${requestId}] New query request`);
+
   try {
     const { checkoutRequestId } = await req.json();
 
     if (!checkoutRequestId) {
+      console.error(`[QUERY][${requestId}] Missing checkoutRequestId`);
       return new Response(
-        JSON.stringify({ error: "Missing checkoutRequestId" }),
+        JSON.stringify({ 
+          success: false,
+          error: "Missing checkoutRequestId" 
+        }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`Querying status for checkoutRequestId: ${checkoutRequestId}`);
+    console.log(`[QUERY][${requestId}] Querying status for: ${checkoutRequestId}`);
 
     const accessToken = await getAccessToken();
     const timestamp = getTimestamp();
@@ -93,31 +105,54 @@ serve(async (req) => {
     );
 
     const result = await queryResponse.json();
-    console.log("Query result:", JSON.stringify(result));
+    console.log(`[QUERY][${requestId}] M-Pesa response:`, JSON.stringify(result));
 
     // Interpret result codes
     let status = "pending";
-    let message = "Transaction is being processed";
+    let message = "Transaction is being processed. Please wait...";
 
-    if (result.ResultCode === "0") {
-      status = "success";
-      message = "Payment successful";
-    } else if (result.ResultCode === "1032") {
-      status = "cancelled";
-      message = "Request cancelled by user";
-    } else if (result.ResultCode === "1037") {
-      status = "timeout";
-      message = "Request timed out";
-    } else if (result.ResultCode === "2001") {
-      status = "failed";
-      message = "Wrong PIN entered";
-    } else if (result.ResultCode) {
-      status = "failed";
-      message = result.ResultDesc || "Payment failed";
+    // Check for successful response structure first
+    if (result.ResponseCode === "0" && result.ResultCode !== undefined) {
+      // We have a valid query response
+      const resultCode = String(result.ResultCode);
+      
+      if (resultCode === "0") {
+        status = "success";
+        message = "Payment successful! Your order has been confirmed.";
+      } else if (resultCode === "1032") {
+        status = "cancelled";
+        message = "Transaction cancelled by user";
+      } else if (resultCode === "1037") {
+        status = "timeout";
+        message = "Transaction timed out. Please try again.";
+      } else if (resultCode === "2001") {
+        status = "failed";
+        message = "Wrong PIN entered. Please try again.";
+      } else if (resultCode === "1") {
+        status = "failed";
+        message = "Insufficient balance";
+      } else {
+        status = "failed";
+        message = result.ResultDesc || "Payment failed. Please try again.";
+      }
+    } else if (result.ResponseCode === "0" && !result.ResultCode) {
+      // Query successful but no result yet (still processing)
+      status = "pending";
+      message = "Waiting for your M-Pesa PIN...";
+    } else if (result.errorCode === "500.001.1001") {
+      // Invalid request - likely still processing
+      status = "pending";
+      message = "Processing your payment...";
+    } else if (result.ResponseCode) {
+      status = "error";
+      message = result.ResponseDescription || "Error checking payment status";
     }
+
+    console.log(`[QUERY][${requestId}] Final status: ${status}, message: ${message}`);
 
     return new Response(
       JSON.stringify({
+        success: true,
         status,
         message,
         resultCode: result.ResultCode,
@@ -125,11 +160,16 @@ serve(async (req) => {
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
+
   } catch (error: unknown) {
-    console.error("Error querying status:", error);
+    console.error(`[QUERY][${requestId}] Error:`, error);
     const message = error instanceof Error ? error.message : "Internal server error";
     return new Response(
-      JSON.stringify({ error: message }),
+      JSON.stringify({ 
+        success: false,
+        error: message,
+        status: "error"
+      }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
